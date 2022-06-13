@@ -38,7 +38,7 @@ public:
 		intmed_var = var;							//record the intermediate variables before update
 
 		Assert(std::is_same<real, double>::value, "only double data type is supported by the mma solver");
-		mma_solver->Update(ArrayFunc::Data<real, DataHolder::HOST>(var), ArrayFunc::Data<real, DataHolder::HOST>(grad), nullptr, nullptr, ArrayFunc::Data<real, DataHolder::HOST>(var_low_bounds), ArrayFunc::Data<real, DataHolder::HOST>(var_up_bounds));
+		mma_solver->Update(ArrayFunc::Data(var), ArrayFunc::Data(grad), nullptr, nullptr, ArrayFunc::Data(var_low_bounds), ArrayFunc::Data(var_up_bounds));
 	}
 
 	virtual void Output(const bf::path base_path, const int iter) {
@@ -102,7 +102,7 @@ public:
 		var_low_bounds = var;
 		ArrayFunc::Add_Scalar(var_up_bounds, mov_lim);
 		ArrayFunc::Add_Scalar(var_low_bounds, -mov_lim);
-		ArrayFunc::Min<real>(rho_max, var_up_bounds, var_up_bounds);
-		ArrayFunc::Max<real>(rho_min, var_low_bounds, var_low_bounds);
+		ArrayFunc::Unary_Transform(var_up_bounds, [=](const real a) {return std::min(a, rho_max); }, var_up_bounds);
+		ArrayFunc::Unary_Transform(var_low_bounds, [=](const real a) {return std::max(a, rho_min); }, var_low_bounds);
 	}
 };
