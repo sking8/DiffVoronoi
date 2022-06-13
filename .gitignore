@@ -1,0 +1,7 @@
+proj/*/build/
+build/
+bin/
+.vs/
+*.swp
+*.vshistory/
+*.xmake/
