@@ -29,7 +29,7 @@ public:
 	real rho_min = (real)0;							//the rho_min corresponds to minimum young's modulus = young's modulus * rho_min, optimized rho ranges from [0,1]
 	real rho_max = (real)1;
 
-	void Optimize(OptimizerDriverMetaData& meta_data) {
+	virtual void Optimize(OptimizerDriverMetaData& meta_data) {
 		Compute_Objective();
 		Compute_Gradient();
 		//Compute_Constraint();
@@ -41,13 +41,13 @@ public:
 		mma_solver->Update(ArrayFunc::Data<real, DataHolder::HOST>(var), ArrayFunc::Data<real, DataHolder::HOST>(grad), nullptr, nullptr, ArrayFunc::Data<real, DataHolder::HOST>(var_low_bounds), ArrayFunc::Data<real, DataHolder::HOST>(var_up_bounds));
 	}
 
-	void Output(const bf::path base_path, const int iter) {
+	virtual void Output(const bf::path base_path, const int iter) {
 		std::string vts_name = fmt::format("vts{:04d}.vts", iter);
 		bf::path vtk_path = base_path / bf::path(vts_name);
 		VTKFunc::Write_VTS(rho, vtk_path.string());
 	}
 
-	bool Is_Converged(OptimizerDriverMetaData& meta_data) {
+	virtual bool Is_Converged(OptimizerDriverMetaData& meta_data) {
 		Array<real> temp = var;
 		ArrayFunc::Minus(temp, intmed_var);
 		real change = ArrayFunc::Max_Abs<real>(temp);
@@ -69,28 +69,23 @@ public:
 	}
 
 	//================== Essential MMA Functions================================
-
 	real Compute_Objective() { //temporary objective is the sum of all rho
 		Sync_Var_Opt_To_Fem();
-		real obj = 0;
-		for (int i = 0; i < var.size(); i++) { obj += var[i]; }
+		real obj=ArrayFunc::Sum<real>(var);
 		return obj;
 	}
 
 	void Sync_Fem_To_Var_Opt() {
-#pragma omp parallel for
-		for (int i = 0; i < var.size(); i++) { var[i] = rho.Data()[i]; }
+		var = rho.Data();
 	}
 
 	void Sync_Var_Opt_To_Fem() {
-#pragma omp parallel for
-		for (int i = 0; i < var.size(); i++) { rho.Data()[i] = var[i]; }
+		rho.Data() = var;
 	}
 
 	////var -> dobj_drho
 	void Compute_Gradient() {
-#pragma omp parallel for
-		for (int i = 0; i < var.size(); i++) { grad[i] = (real)1; }
+		ArrayFunc::Fill(grad, (real)1);
 	}
 
 	//volume constraints
@@ -103,10 +98,11 @@ public:
 	}
 
 	void Compute_Bounds() {
-#pragma omp parallel for
-		for (int i = 0; i < var.size(); i++) {
-			var_up_bounds[i] = std::min(rho_max, var[i] + mov_lim);
-			var_low_bounds[i] = std::max(rho_min, var[i] - mov_lim);
-		}
+		var_up_bounds =var;
+		var_low_bounds = var;
+		ArrayFunc::Add_Scalar(var_up_bounds, mov_lim);
+		ArrayFunc::Add_Scalar(var_low_bounds, -mov_lim);
+		ArrayFunc::Min<real>(rho_max, var_up_bounds, var_up_bounds);
+		ArrayFunc::Max<real>(rho_min, var_low_bounds, var_low_bounds);
 	}
 };
