@@ -16,7 +16,7 @@ template<int d> class LinearFemGrid
 {
 	Typedef_VectorD(d); Typedef_MatrixD(d);
 public:
-	Grid<d> node_grid;
+	Grid<d> grid;					//this grid is a corner grid, represending the corner nodes
 	SparseMatrix<real> K;
 	VectorX u;
 	VectorX f;
@@ -33,8 +33,8 @@ public:
 	GMGPCG_Solver_GPU<real, d> gmg_solver_gpu;
 #endif*/
 
-	Array<int> colored_cell_ptr;	//mark where each color starts and ends
-	Array<int> colored_cell_indices;	//mark where each color starts and ends
+	//Array<int> colored_cell_ptr;	//mark where each color starts and ends
+	//Array<int> colored_cell_indices;	//indices of colors in each cell
 
 	virtual void Initialize(const Grid<d> _grid);
 	void Allocate_K();
@@ -50,5 +50,5 @@ public:
 
 	void Compute_Cell_Displacement(const VectorX& u, const VectorDi& cell, VectorX& cell_u) const;
 
-	virtual void Compute_Elastic_Energy(Field<real, d>& energy) const;			////multiplying rho		
+	virtual void Compute_Elastic_Energy(Field<real, d>& energy) const;
 };

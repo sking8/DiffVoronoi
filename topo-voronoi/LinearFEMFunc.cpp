@@ -130,9 +130,9 @@ namespace LinearFEMFunc {
 	template void Add_Cell_Stiffness_Matrix<2>(/*rst*/SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& nodes);
 	template void Add_Cell_Stiffness_Matrix<3>(/*rst*/SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& nodes);
 
-	template<int d> void Set_Cell_B_Elements_Helper(const int r, const int c, const VectorX& dN, MatrixX& B, const real coef)
+	template<int d> void Set_Cell_B_Elements_Helper(const int r, const int c, const VectorX& dN, MatrixX& B)
 	{
-		for (int i = 0; i < (int)dN.size(); i++)B(r, c + i * d) = dN[i] * coef;
+		for (int i = 0; i < (int)dN.size(); i++)B(r, c + i * d) = dN[i];
 	}
 
 	void Set_Dirichlet_Boundary_Helper(SparseMatrix<real>& K, VectorX& b, const int i, const real psi_D_value)

@@ -25,9 +25,9 @@ namespace ColorGrid
 		Array<Array<int> > buckets(color_n);
 		for (int i = 0; i < color_n; i++)buckets[i].reserve(grid.Counts().prod() / color_n + 1);
 
-		/*iterate_cell(iter, node_grid) {
+		/*iterate_cell(iter, grid) {
 			const VectorDi& cell = iter.Coord(); int c = Color(cell);
-			buckets[c].push_back(node_grid.Cell_Index(cell));
+			buckets[c].push_back(grid.Cell_Index(cell));
 		}*/
 
 		grid.Iterate_Nodes(

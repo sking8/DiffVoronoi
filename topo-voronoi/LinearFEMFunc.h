@@ -23,7 +23,7 @@ namespace LinearFEMFunc
 
 	//Hex helper functions
 	template<int d> void Add_Cell_Stiffness_Matrix(SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& nodes);
-	template<int d> void Set_Cell_B_Elements_Helper(const int r, const int c, const VectorX& dN, MatrixX& B, const real coef = (real)1);
+	template<int d> void Set_Cell_B_Elements_Helper(const int r, const int c, const VectorX& dN, MatrixX& B);
 
 	//Gaussian integration
 	template<int d> void Initialize_Gaussian_Integration_Points(ArrayF2P<Vector<real, d>, d>& points, ArrayF2P<real, d>& weights); // Gauss product rule p = 2, 3rd order accuracy
