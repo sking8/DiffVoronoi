@@ -58,7 +58,7 @@ public:
 
 	void Init(Grid<d>& _grid) {
 		grid = _grid;
-		int cell_num = grid.counts.prod();
+		int cell_num = grid.Counts().prod();
 		var.resize(cell_num,(real)1);
 		intmed_var.resize(cell_num,(real)0); //Fan: be careful with the initialization of the intermediate variable value
 		grad.resize(cell_num, (real)1);

@@ -23,14 +23,14 @@ namespace VTKFunc {
 		const auto grid = F.grid;
 		int nx, ny, nz;
 		if constexpr (d == 2) {
-			nx = grid.counts[0];
-			ny = grid.counts[1];
+			nx = grid.Counts()[0];
+			ny = grid.Counts()[1];
 			nz = 1;
 		}
 		else if constexpr (d == 3) {
-			nx = grid.counts[0];
-			ny = grid.counts[1];
-			nz = grid.counts[2];
+			nx = grid.Counts()[0];
+			ny = grid.Counts()[1];
+			nz = grid.Counts()[2];
 		}
 		else {
 			Error("Dimension is not supported!");

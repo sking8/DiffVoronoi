@@ -76,7 +76,7 @@ protected:
 
 	inline real Softmax(const int p_idx, const VectorDi& cell)	////use precomputed softmax
 	{
-		return exp(-Dist(p_idx, grid.Cell_Center(cell))) / soft_max_sum(cell);
+		return exp(-Dist(p_idx, grid.Position(cell))) / soft_max_sum(cell);
 	}
 
 	inline real Softmax_Epsi(const VectorDi& cell)	////softmax for epsilon, free boundary case
@@ -96,24 +96,24 @@ protected:
 
 	inline VectorD dS_dX(const int m, const int n, const VectorDi& cell)
 	{
-		VectorD pos = grid.Cell_Center(cell); return -Softmax(m, cell) * (Delta(m, n) - Softmax(n, cell)) * Y_helper(n, pos);
+		VectorD pos = grid.Position(cell); return -Softmax(m, cell) * (Delta(m, n) - Softmax(n, cell)) * Y_helper(n, pos);
 	}
 
 	inline VectorD dS_Epsi_dX(const int n, const VectorDi& cell) //free boundary case
 	{
-		VectorD pos = grid.Cell_Center(cell); return Softmax_Epsi(cell) * Softmax(n, cell) * Y_helper(n, pos);
+		VectorD pos = grid.Position(cell); return Softmax_Epsi(cell) * Softmax(n, cell) * Y_helper(n, pos);
 	}
 
 	inline MatrixD dS_dD(const int m, const int n, const VectorDi& cell)
 	{
-		VectorD pos = grid.Cell_Center(cell);
+		VectorD pos = grid.Position(cell);
 		VectorD X = X_helper(n, pos);
 		return -Softmax(m, cell) * (Delta(m, n) - Softmax(n, cell)) * Dist(n, pos) * X * X.transpose() * particles.D(n);
 	}
 
 	inline MatrixD dS_Epsi_dD(const int n, const VectorDi& cell) //free boundary case
 	{
-		VectorD pos = grid.Cell_Center(cell);
+		VectorD pos = grid.Position(cell);
 		VectorD X = X_helper(n, pos);
 		return Softmax_Epsi(cell) * Softmax(n, cell) * Dist(n, pos) * X * X.transpose() * particles.D(n);
 	}
