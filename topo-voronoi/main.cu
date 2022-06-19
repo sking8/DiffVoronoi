@@ -6,6 +6,8 @@
 #include "OptimizerDriver.h"
 #include "VoronoiField.h"
 #include "VoronoiFieldInitializer.h"
+#include "LinearFEMGrid.h"
+#include "LinearFEMGridInitializer.h"
 
 using namespace Meso;
 
@@ -21,6 +23,14 @@ template<int d>
 void Run_Voronoi_Field(json& j) {
 	VoronoiField<d> voronoi_field;
 	VoronoiFieldInitializer<d> scene;
+	Driver driver;
+	driver.Run(j, scene, voronoi_field);
+}
+
+template<int d>
+void Run_Linear_FEM_Grid(json& j) {
+	LinearFEMGrid<d> voronoi_field;
+	LinearFEMGridInitializer<d> scene;
 	Driver driver;
 	driver.Run(j, scene, voronoi_field);
 }
@@ -51,6 +61,11 @@ int main(int argc, char** argv) {
 			if (dim == 2) {Run_Voronoi_Field<2>(j);}
 			else if (dim == 3) {Run_Voronoi_Field<3>(j);}
 			else {Error("Dimension not supported!");}
+		}
+		else if (app == "linear_fem_grid") {
+			if (dim == 2) { Run_Linear_FEM_Grid<2>(j); }
+			else if (dim == 3) { Run_Linear_FEM_Grid<3>(j); }
+			else { Error("Dimension not supported!"); }
 		}
 		else {
 			Error("main: Invalid app");

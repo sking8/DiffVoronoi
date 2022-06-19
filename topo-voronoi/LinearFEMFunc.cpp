@@ -4,8 +4,8 @@
 
 using namespace Meso;
 namespace LinearFEMFunc {
-	//////////////////////////////////////////////////////////////////////////
-	////Material model
+	////////////////////////////////////////////////////////////////////////
+	//Material model
 	template<> void Strain_Stress_Matrix_Linear<2>(const real youngs, const real poisson, MatrixX& E)
 	{
 		////zero stress in z
@@ -19,8 +19,8 @@ namespace LinearFEMFunc {
 		E(0, 0) = E(1, 1) = E(2, 2) = e * ((real)1 - poisson); E(0, 1) = E(1, 0) = E(0, 2) = E(2, 0) = E(1, 2) = E(2, 1) = e * poisson; E(3, 3) = E(4, 4) = E(5, 5) = G;
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	////Hex element
+	////////////////////////////////////////////////////////////////////////
+	//Hex element
 	template<> void dNde<2>(const Vector2& natural_coord, MatrixX& dNde)
 	{
 		const real s = natural_coord[0]; const real t = natural_coord[1];
@@ -121,6 +121,26 @@ namespace LinearFEMFunc {
 	template void Cell_Stiffness_Matrix<2>(const real youngs, const real poisson, const real dx, MatrixX& K_e);
 	template void Cell_Stiffness_Matrix<3>(const real youngs, const real poisson, const real dx, MatrixX& K_e);
 
+	template<int d> void Set_Cell_B_Elements_Helper(const int r, const int c, const VectorX& dN, MatrixX& B)
+	{
+		for (int i = 0; i < (int)dN.size(); i++)B(r, c + i * d) = dN[i];
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	//Gaussian integration
+	template<> void Initialize_Gaussian_Integration_Points<2>(ArrayF2P<Vector2, 2>& points, ArrayF2P<real, 2>& weights) //2^2=4 sample points
+	{
+		real c = (real)1 / sqrt((real)3); points[0] = Vector2(-c, -c); points[1] = Vector2(-c, c); points[2] = Vector2(c, -c); points[3] = Vector2(c, c); ArrayFunc::Fill(weights, (real)1);
+	}
+
+	template<> void Initialize_Gaussian_Integration_Points<3>(ArrayF2P<Vector3, 3>& points, ArrayF2P<real, 3>& weights) //2^3=8 sample points
+	{
+		real c = (real)1/sqrt((real)3); points[0] = Vector3(-c, -c, -c); points[1] = Vector3(-c, -c, c); points[2] = Vector3(-c, c, -c); points[3] = Vector3(-c, c, c);
+		points[4] = Vector3(c, -c, -c); points[5] = Vector3(c, -c, c); points[6] = Vector3(c, c, -c); points[7] = Vector3(c, c, c); ArrayFunc::Fill(weights, (real)1);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	//Operations on the global stiffness matrix
 	template<int d> void Add_Cell_Stiffness_Matrix(/*rst*/SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& nodes)
 	{
 		const int node_n = (int)nodes.size(); for (int Ke_i = 0; Ke_i < node_n; Ke_i++) {
@@ -129,11 +149,6 @@ namespace LinearFEMFunc {
 	}
 	template void Add_Cell_Stiffness_Matrix<2>(/*rst*/SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& nodes);
 	template void Add_Cell_Stiffness_Matrix<3>(/*rst*/SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& nodes);
-
-	template<int d> void Set_Cell_B_Elements_Helper(const int r, const int c, const VectorX& dN, MatrixX& B)
-	{
-		for (int i = 0; i < (int)dN.size(); i++)B(r, c + i * d) = dN[i];
-	}
 
 	void Set_Dirichlet_Boundary_Helper(SparseMatrix<real>& K, VectorX& b, const int i, const real psi_D_value)
 	{
@@ -145,18 +160,5 @@ namespace LinearFEMFunc {
 				K.coeffRef(i, j) = (real)0; K.coeffRef(j, i) = (real)0;
 			}
 		}
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	////Gaussian integration
-	template<> void Initialize_Gaussian_Integration_Points<2>(ArrayF2P<Vector2, 2>& points, ArrayF2P<real, 2>& weights) //2^2=4 sample points
-	{
-		real c = (real)1 / sqrt((real)3); points[0] = Vector2(-c, -c); points[1] = Vector2(-c, c); points[2] = Vector2(c, -c); points[3] = Vector2(c, c); ArrayFunc::Fill(weights, (real)1);
-	}
-
-	template<> void Initialize_Gaussian_Integration_Points<3>(ArrayF2P<Vector3, 3>& points, ArrayF2P<real, 3>& weights) //2^3=8 sample points
-	{
-		real c = (real)1/sqrt((real)3); points[0] = Vector3(-c, -c, -c); points[1] = Vector3(-c, -c, c); points[2] = Vector3(-c, c, -c); points[3] = Vector3(-c, c, c);
-		points[4] = Vector3(c, -c, -c); points[5] = Vector3(c, -c, c); points[6] = Vector3(c, c, -c); points[7] = Vector3(c, c, c); ArrayFunc::Fill(weights, (real)1);
 	}
 }

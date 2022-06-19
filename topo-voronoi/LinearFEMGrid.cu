@@ -1,40 +1,70 @@
 #include "LinearFEMGrid.h"
 #include "ColorGrid.h"
+
+#include <amgcl/backend/eigen.hpp>
+#include <amgcl/make_solver.hpp>
+#include <amgcl/amg.hpp>
+#include <amgcl/coarsening/smoothed_aggregation.hpp>
+#include <amgcl/relaxation/spai0.hpp>
+#include <amgcl/solver/cg.hpp>
 using namespace Meso;
 
 //=================================Helper function================================
 template<int d>
 Vector<int,d> Corner_Offset(const Vector<int, d>& center, int i) {
 	Assert(i < pow(2, d), "Corner_Offset: index out of  range");
-	if constexpr (d == 2) { return center + Vector2i(i & 0x1, i >> 1 & 0x1); }
-	else if constexpr (d == 3) { return center + Vector3i(i & 0x1, i >> 1 & 0x1, i >> 2 & 0x1); }
+	if constexpr (d == 2) { return center + Vector2i(i & 0x1, (i >> 1) & 0x1); }
+	else if constexpr (d == 3) { return center + Vector3i(i & 0x1, (i >> 1) & 0x1, (i >> 2) & 0x1); }
 	else { Error("Corner_Offset: dimension not supported"); return Vector<int, d>(); }
 }
 
+template<int d> void Vector_To_Field(const VectorX& v, Field<Vector<real,d>,d>& f) {
+	Typedef_VectorD(d);
+	Assert(f.grid.Counts().prod() * d == v.size(), "Vector_To_Field: vector and field should have the same size");
+	f.Exec_Nodes(
+		[&](const VectorDi node) {
+			int idx = f.grid.Index(node);
+			f(node) = v.segment<d>(d * idx);
+		}
+	);
+}
+
 //================================Main body=======================================
-template<int d> void LinearFemGrid<d>::Initialize(const Grid<d> _grid)
+template<int d> void LinearFEMGrid<d>::Output(DriverMetaData& metadata) {
+	//output the displacement field
+	Field<Vector<real, d>, d> u_field;
+	u_field.Init(grid);
+	Vector_To_Field<d>(u, u_field);
+	std::string vts_name = fmt::format("u_vts{:04d}.vts", metadata.current_frame);
+	bf::path vtk_path = metadata.base_path / bf::path(vts_name);
+	VTKFunc::Write_Vector_Field(u_field, vtk_path.string());
+}
+
+template<int d> void LinearFEMGrid<d>::Initialize(const Grid<d> _grid, const BoundaryConditionGrid<d>& _bc, const Array<std::tuple<real,real>>& _materials, const Field<short, d>& _material_id) //this is a corner grid
 {
 	//colored_cell_ptr.resize(Pow(2, d) + 1);
 	//for (int i = 0; i < colored_cell_ptr.size(); i++)colored_cell_ptr[i] = i;
 
 	grid = _grid;
-	Add_Material((real)1, (real).3);									// should it be here?
-	material_id.Init(_grid.Cell_Grid(), 0);						// use cell grid
-
+	bc = _bc;
+	material_id = _material_id;
+	for (int i = 0; i < _materials.size(); i++) { Add_Material(_materials[i]); }
 	int n = grid.Counts().prod() * d;								// be careful about the difference between cell counts and node counts
 	K.resize(n, n); u.resize(n); u.fill((real)0); f.resize(n); f.fill((real)0);
+	Allocate_K();
 }
 
-template<int d> void LinearFemGrid<d>::Add_Material(real youngs, real poisson)
+template<int d> void LinearFEMGrid<d>::Add_Material(const std::tuple<real, real> material)
 {
+	auto [youngs, poisson] = material;
 	MatrixX Ke0; //stiffness matrix of the material
 	LinearFEMFunc::Cell_Stiffness_Matrix<d>(youngs, poisson, grid.dx, Ke0);
 	Ke.push_back(Ke0);
 }
 
-template<int d> void LinearFemGrid<d>::Allocate_K()
+template<int d> void LinearFEMGrid<d>::Allocate_K()
 {
-	std::vector<Triplet<real>> elements; //Fan: Can I use Array here?
+	std::vector<Triplet<real>> elements; //Fan: Can only use std array 
 	
 	//need to check which side that data resides
 	grid.Iterate_Nodes(
@@ -54,7 +84,7 @@ template<int d> void LinearFemGrid<d>::Allocate_K()
 	//ColorGrid::Color<d>(grid.Counts(), colored_cell_ptr, colored_cell_indices);
 }
 
-template<int d> void LinearFemGrid<d>::Update_K_And_f()
+template<int d> void LinearFEMGrid<d>::Update_K_And_f()
 {
 	////Update K
 //	int color_n = colored_cell_ptr.size()-1;
@@ -79,7 +109,7 @@ template<int d> void LinearFemGrid<d>::Update_K_And_f()
 				corners[j] = grid.Index(Corner_Offset<d>(node, j));
 			}
 			int mat_id = material_id(node);
-			LinearFEMFunc::Add_Cell_Stiffness_Matrix<d>(K, Ke[mat_id], corners);
+			LinearFEMFunc::Add_Cell_Stiffness_Matrix<d>(K, Ke[mat_id], corners); //Fan: exception here, may be some indexing issue!
 		}
 	);
 
@@ -100,7 +130,7 @@ template<int d> void LinearFemGrid<d>::Update_K_And_f()
 	}
 }
 
-template<int d> void LinearFemGrid<d>::Solve()
+template<int d> void LinearFEMGrid<d>::Solve()
 {
 	u.fill((real)0);
 
@@ -128,25 +158,26 @@ template<int d> void LinearFemGrid<d>::Solve()
 //	gmg_solver_cpu.Solve(u, f);
 //#endif
 
-	//Fan: to use the amgcl solver
+	// use amgcl solver for solving the system
+	// Setup the solver:
+	typedef amgcl::make_solver<
+		amgcl::amg<
+		amgcl::backend::eigen<real>,
+		amgcl::coarsening::smoothed_aggregation,
+		amgcl::relaxation::spai0
+		>,
+		amgcl::solver::cg<amgcl::backend::eigen<real> >
+	> Solver;
+
+	Solver solve(K);
+	std::cout << solve << std::endl;
+
+	// Solve the system for the given RHS:
+	auto [a, error]= solve(f, u);
+	Info("Solver finished within {} iters with error {}.", a, error);
 }
 
-template<int d> void LinearFemGrid<d>::Set_Fixed(const VectorDi& node)
-{
-	bc.psi_D_values[node] = VectorD::Zero();
-}
-
-template<int d> void LinearFemGrid<d>::Set_Displacement(const VectorDi& node, const VectorD& dis)
-{
-	bc.psi_D_values[node] = dis;
-}
-
-template<int d> void LinearFemGrid<d>::Set_Force(const VectorDi& node, const VectorD& force)
-{
-	bc.forces[node] = force;
-}
-
-template<int d> void LinearFemGrid<d>::Compute_Cell_Displacement(const VectorX& u, const VectorDi& cell, VectorX& cell_u) const
+template<int d> void LinearFEMGrid<d>::Compute_Cell_Displacement(const VectorX& u, const VectorDi& cell, VectorX& cell_u) const
 {
 	int number_of_cell_nodes = pow(2, d);
 	cell_u.resize(number_of_cell_nodes * d);
@@ -156,7 +187,7 @@ template<int d> void LinearFemGrid<d>::Compute_Cell_Displacement(const VectorX& 
 	}
 }
 
-template<int d> void LinearFemGrid<d>::Compute_Elastic_Energy(Field<real, d>& energy) const
+template<int d> void LinearFEMGrid<d>::Compute_Elastic_Energy(Field<real, d>& energy) const
 {
 	energy.Init(grid.Cell_Grid().Counts(), (real)0);
 
@@ -171,5 +202,5 @@ template<int d> void LinearFemGrid<d>::Compute_Elastic_Energy(Field<real, d>& en
 	);
 }
 
-template class LinearFemGrid<2>;
-template class LinearFemGrid<3>;
+template class LinearFEMGrid<2>;
+template class LinearFEMGrid<3>;
