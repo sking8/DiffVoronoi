@@ -27,8 +27,8 @@ public:
 
 	////parameters
 	real epsi_A = (real)0;					////avoid singular A, not used by default
-	real epsi_S = (real)0;					////for free boundary, not used by default
-	int beta = 50;							////power index
+	int beta;								////power index
+	real c;
 
 	////neighbor searching
 	int nb_n;
@@ -42,7 +42,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	////Initialization
-	void Initialize(const Grid<d> _grid, const Array<VectorD>& points, const int nb_n);
+	void Initialize(const Grid<d> _grid, const Array<VectorD>& points, const int nb_n, int beta, real _alpha, real _c);
 
 	//////////////////////////////////////////////////////////////////////////
 	////Field update functions
@@ -50,7 +50,12 @@ public:
 		std::string vts_name = fmt::format("vts{:04d}.vts", metadata.current_frame);
 		bf::path vtk_path = metadata.base_path / bf::path(vts_name);
 		VTKFunc::Write_VTS(rho, vtk_path.string());
+
+		std::string vtu_name = fmt::format("points{:04d}.vtu", metadata.current_frame);
+		bf::path vtu_path = metadata.base_path / bf::path(vtu_name);
+		VTKFunc::Write_Points<d>(particles.xRef(), vtu_path.string());
 	}
+
 	virtual real CFL_Time(const real cfl) { return 1; }
 	virtual void Advance(DriverMetaData& metadata);		////updates state variables including nbs, softmax, and rho. It does not update any sensitivities.
 	void Update_Neighbors();							////update point nbs 
@@ -79,11 +84,6 @@ protected:
 		return exp(-Dist(p_idx, grid.Position(cell))) / soft_max_sum(cell);
 	}
 
-	inline real Softmax_Epsi(const VectorDi& cell)	////softmax for epsilon, free boundary case
-	{
-		return epsi_S / soft_max_sum(cell);
-	}
-
 	inline VectorD X_helper(const int p_idx, const VectorD& pos)
 	{
 		return (particles.x(p_idx) - pos) / (Dist(p_idx, pos));
@@ -99,22 +99,10 @@ protected:
 		VectorD pos = grid.Position(cell); return -Softmax(m, cell) * (Delta(m, n) - Softmax(n, cell)) * Y_helper(n, pos);
 	}
 
-	inline VectorD dS_Epsi_dX(const int n, const VectorDi& cell) //free boundary case
-	{
-		VectorD pos = grid.Position(cell); return Softmax_Epsi(cell) * Softmax(n, cell) * Y_helper(n, pos);
-	}
-
 	inline MatrixD dS_dD(const int m, const int n, const VectorDi& cell)
 	{
 		VectorD pos = grid.Position(cell);
 		VectorD X = X_helper(n, pos);
 		return -Softmax(m, cell) * (Delta(m, n) - Softmax(n, cell)) * Dist(n, pos) * X * X.transpose() * particles.D(n);
-	}
-
-	inline MatrixD dS_Epsi_dD(const int n, const VectorDi& cell) //free boundary case
-	{
-		VectorD pos = grid.Position(cell);
-		VectorD X = X_helper(n, pos);
-		return Softmax_Epsi(cell) * Softmax(n, cell) * Dist(n, pos) * X * X.transpose() * particles.D(n);
 	}
 };
