@@ -38,6 +38,10 @@ template<int d> void LinearFEMGrid<d>::Output(DriverMetaData& metadata) {
 	std::string vts_name = fmt::format("u_vts{:04d}.vts", metadata.current_frame);
 	bf::path vtk_path = metadata.base_path / bf::path(vts_name);
 	VTKFunc::Write_Vector_Field(u_field, vtk_path.string());
+
+	std::string vtu_name = fmt::format("bc{:04d}.vtu", metadata.current_frame);
+	vtk_path = metadata.base_path / bf::path(vtu_name);
+	VTKFunc::Write_Boundary_Condition(bc, grid, vtk_path.string());
 }
 
 template<int d> void LinearFEMGrid<d>::Initialize(const Grid<d> _grid, const BoundaryConditionGrid<d>& _bc, const Array<std::tuple<real,real>>& _materials, const Field<short, d>& _material_id) //this is a corner grid
@@ -117,7 +121,7 @@ template<int d> void LinearFEMGrid<d>::Update_K_And_f()
 	f.fill((real)0);
 	for (auto& b : bc.forces) {
 		VectorDi node = b.first; VectorD force = b.second;
-		for (int axis = 0; axis < d; axis++) { int idx = grid.Index(node) * d + axis; f[idx] += force[axis]; } //Fan: Is the index usage right here. Yes
+		int idx = grid.Index(node) * d; f.segment<d>(idx) = force;
 	}
 
 	////Update bc

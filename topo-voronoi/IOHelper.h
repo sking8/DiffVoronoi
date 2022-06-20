@@ -2,6 +2,7 @@
 #include "Common.h"
 #include "Field.h"
 #include "AuxFunc.h"
+#include "BoundaryConditionGrid.h"
 #include <vtkNew.h>
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLUnstructuredGridWriter.h>
@@ -117,6 +118,44 @@ namespace VTKFunc {
 		writer->SetInputData(structured_grid);
 		writer->SetFileName(file_name.c_str());
 		writer->SetDataModeToBinary();
+		writer->Write();
+	}
+
+	template<int d>
+	void Write_Boundary_Condition(const BoundaryConditionGrid<d>& bc, const Grid<d> grid,std::string file_name) {
+		Typedef_VectorD(d);
+
+		// setup VTK
+		vtkNew<vtkXMLUnstructuredGridWriter> writer;
+		vtkNew<vtkUnstructuredGrid> unstructured_grid;
+
+		vtkNew<vtkPoints> nodes;
+		nodes->Allocate(bc.psi_D_values.size()+bc.forces.size());
+		vtkNew<vtkDoubleArray> valueArray;
+		valueArray->SetName("Value");
+		valueArray->SetNumberOfComponents(3);
+
+		for (const auto& b : bc.psi_D_values) {
+			Vector3 pos3 = MathFunc::V<3>(grid.Position(b.first));
+			nodes->InsertNextPoint(pos3[0], pos3[1], pos3[2]);
+			Vector3 value3 = MathFunc::V<3>(b.second);
+			valueArray->InsertNextTuple3(value3[0], value3[1], value3[2]);
+		}
+
+		for (const auto& b : bc.forces) {
+			Vector3 pos3 = MathFunc::V<3>(grid.Position(b.first));
+			nodes->InsertNextPoint(pos3[0], pos3[1], pos3[2]);
+			Vector3 value3 = MathFunc::V<3>(b.second);
+			valueArray->InsertNextTuple3(value3[0], value3[1], value3[2]);
+		}
+
+		unstructured_grid->SetPoints(nodes);
+
+		unstructured_grid->GetPointData()->AddArray(valueArray);
+		unstructured_grid->GetPointData()->SetActiveVectors("Value");
+
+		writer->SetFileName(file_name.c_str());
+		writer->SetInputData(unstructured_grid);
 		writer->Write();
 	}
 }

@@ -40,7 +40,7 @@ public:
 
 	virtual void Output(DriverMetaData& metadata); //Fan: to visualize the displacement field and strain field
 	virtual void Advance(DriverMetaData& metadata) { Update_K_And_f(); Solve(); }
-	virtual real CFL_Time(const real dt) { return 0; }
+	virtual real CFL_Time(const real dt) { return 1; }
 
 	virtual void Initialize(const Grid<d> _grid, const BoundaryConditionGrid<d>& _bc, const Array<std::tuple<real, real>>& _materials, const Field<short, d>& _material_id);
 	void Allocate_K();
