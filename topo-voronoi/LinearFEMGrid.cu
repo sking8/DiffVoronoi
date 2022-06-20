@@ -39,9 +39,7 @@ template<int d> void LinearFEMGrid<d>::Output(DriverMetaData& metadata) {
 	bf::path vtk_path = metadata.base_path / bf::path(vts_name);
 	VTKFunc::Write_Vector_Field(u_field, vtk_path.string());
 
-	std::string vtu_name = fmt::format("bc{:04d}.vtu", metadata.current_frame);
-	vtk_path = metadata.base_path / bf::path(vtu_name);
-	VTKFunc::Write_Boundary_Condition(bc, grid, vtk_path.string());
+	VTKFunc::Write_Boundary_Condition(bc, grid, metadata.base_path);
 }
 
 template<int d> void LinearFEMGrid<d>::Initialize(const Grid<d> _grid, const BoundaryConditionGrid<d>& _bc, const Array<std::tuple<real,real>>& _materials, const Field<short, d>& _material_id) //this is a corner grid
@@ -113,7 +111,7 @@ template<int d> void LinearFEMGrid<d>::Update_K_And_f()
 				corners[j] = grid.Index(Corner_Offset<d>(node, j));
 			}
 			int mat_id = material_id(node);
-			LinearFEMFunc::Add_Cell_Stiffness_Matrix<d>(K, Ke[mat_id], corners); //Fan: exception here, may be some indexing issue!
+			LinearFEMFunc::Add_Cell_Stiffness_Matrix<d>(K, Ke[mat_id], corners); //Fan: exception here when grid is 33x33, may be some indexing issue!
 		}
 	);
 
@@ -128,7 +126,7 @@ template<int d> void LinearFEMGrid<d>::Update_K_And_f()
 	for (auto& b : bc.psi_D_values) {
 		VectorDi node = b.first; VectorD dis = b.second;
 		for (int axis = 0; axis < d; axis++) {
-			int idx = grid.Index(node) * d + axis;			//Fan: is the index usage right here. Yes
+			int idx = grid.Index(node) * d + axis;
 			LinearFEMFunc::Set_Dirichlet_Boundary_Helper(K, f, idx, dis[axis]);
 		}
 	}
@@ -187,7 +185,7 @@ template<int d> void LinearFEMGrid<d>::Compute_Cell_Displacement(const VectorX& 
 	cell_u.resize(number_of_cell_nodes * d);
 	for (int i = 0; i < number_of_cell_nodes; i++) {
 		VectorDi nb_node = Corner_Offset<d>(cell, i); int nb_node_mtx_idx = grid.Index(nb_node);
-		for (int j = 0; j < d; j++)cell_u(i * d + j) = u(nb_node_mtx_idx * d + j);
+		cell_u.segment<d>(i*d) = u.segment<d>(nb_node_mtx_idx*d);
 	}
 }
 

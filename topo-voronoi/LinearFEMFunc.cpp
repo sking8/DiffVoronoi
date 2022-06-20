@@ -141,10 +141,10 @@ namespace LinearFEMFunc {
 
 	////////////////////////////////////////////////////////////////////////
 	//Operations on the global stiffness matrix
-	template<int d> void Add_Cell_Stiffness_Matrix(/*rst*/SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& nodes)
+	template<int d> void Add_Cell_Stiffness_Matrix(/*rst*/SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& node_indices)
 	{
-		const int node_n = (int)nodes.size(); for (int Ke_i = 0; Ke_i < node_n; Ke_i++) {
-			int K_i = nodes[Ke_i]; for (int Ke_j = 0; Ke_j < node_n; Ke_j++) { int K_j = nodes[Ke_j]; SparseFunc::Add_Block<d>(K, K_i, K_j, K_e, Ke_i, Ke_j); }
+		const int node_n = (int)node_indices.size(); for (int Ke_i = 0; Ke_i < node_n; Ke_i++) {
+			int K_i = node_indices[Ke_i]; for (int Ke_j = 0; Ke_j < node_n; Ke_j++) { int K_j = node_indices[Ke_j]; SparseFunc::Add_Block<d>(K, K_i, K_j, K_e, Ke_i, Ke_j); }
 		}
 	}
 	template void Add_Cell_Stiffness_Matrix<2>(/*rst*/SparseMatrix<real>& K, const MatrixX& K_e, const Array<int>& nodes);
