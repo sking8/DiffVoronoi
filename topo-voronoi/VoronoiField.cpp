@@ -53,11 +53,11 @@ template<int d> void VoronoiField<d>::Update_A()
 {
 	int p_num = particles.Size();
 #pragma omp parallel for
-	for (int i = 0; i < p_num; i++) {
+	for (int i = 0; i < p_num; i++) { //Fan: to add exec particles
 		particles.A(i) = particles.D(i) * particles.D(i).transpose() + epsi_A * MatrixD::Identity();
 		/*Info("p: {}", i);
-		std::cout << "A: " << A[i] << std::endl;
-		std::cout << "D: " << D[i] << std::endl;*/
+		std::cout << "A: " << particles.A(i) << std::endl;
+		std::cout << "D: " << particles.D(i) << std::endl;*/
 	}
 }
 
@@ -65,62 +65,65 @@ template<int d> void VoronoiField<d>::Update_Neighbors()
 {
 	////nb particles of each cell
 	nbs_searcher->Update_Points(particles.xRef());
-	int cell_num = grid.Counts().prod();
-#pragma omp parallel for
-	for (int i = 0; i < cell_num; i++) {
-		nbs[i].clear();
-		VectorDi cell = grid.Coord(i);
-		VectorD pos = grid.Position(cell);
-		if (active(cell) != (int)TopoCellType::Active) { continue; }
 
-		nbs_searcher->Find_K_Nearest_Nbs(pos, nb_n, nbs[i]);
-		int nb_n = nbs[i].size();
-		if (nb_n > 0) {
-			drho_dx[i].resize(nb_n);
-			drho_dD[i].resize(nb_n);
+	grid.Exec_Nodes(
+		[&](const VectorDi cell) {
+			int idx = grid.Index(cell);
+			nbs[idx].clear();
+			VectorD pos = grid.Position(cell);
+			if (active(cell) != (int)TopoCellType::Active) { return; }
+
+			nbs_searcher->Find_K_Nearest_Nbs(pos, nb_n, nbs[idx]);
+			int nb_n = nbs[idx].size();
+			if (nb_n > 0) {
+				drho_dx[idx].resize(nb_n);
+				drho_dD[idx].resize(nb_n);
+			}
 		}
-	}
+	);
 }
 
 template<int d> void VoronoiField<d>::Update_Softmax_Sum()
 {
-	int cell_num = grid.Counts().prod();
-#pragma omp parallel for
-	for (int i = 0; i < cell_num; i++) {
-		VectorDi cell = grid.Coord(i);
-		VectorD pos = grid.Position(cell);
-		if (active(cell) != (int)TopoCellType::Active) {
-			soft_max_sum.Data()[i] = (real)0.; continue;
-		}
+	grid.Exec_Nodes(
+		[&](const VectorDi cell) {
+			int idx = grid.Index(cell);
 
-		real sm_sum = (real)0;
-		int nb_n = nbs[i].size();
-		for (int j = 0; j < nb_n; j++) {
-			int pid = nbs[i][j];
-			real dis = Dist(pid, pos);
-			sm_sum += exp(-dis);
+			VectorD pos = grid.Position(cell);
+			if (active(cell) != (int)TopoCellType::Active) {
+				soft_max_sum(cell) = (real)0.; return;
+			}
+
+			real sm_sum = (real)0;
+			int nb_n = nbs[idx].size();
+			for (int j = 0; j < nb_n; j++) {
+				int pid = nbs[idx][j];
+				real dis = Dist(pid, pos);
+				sm_sum += exp(-dis);
+			}
+			soft_max_sum(cell) = sm_sum;
 		}
-	}
+	);
 }
 
 template<int d> void VoronoiField<d>::Update_Rho()
 {
-	int cell_num = grid.Counts().prod();
-#pragma omp parallel for
-	for (int i = 0; i < cell_num; i++) {
-		VectorDi cell = grid.Coord(i);
-		VectorD pos = grid.Position(cell);
-		if (active(cell) != (int)TopoCellType::Active) { continue; }
-
-		int nb_n = nbs[i].size();
-		real s = (real)0;
-		for (int j = 0; j < nb_n; j++) {
-			int nb_p = nbs[i][j];
-			s += pow(1-Softmax(nb_p, cell), beta);
+	grid.Exec_Nodes(
+		[&](const VectorDi cell) {
+			int idx = grid.Index(cell);
+			VectorD pos = grid.Position(cell);
+			if (active(cell) != (int)TopoCellType::Active) { return; }
+			
+			int nb_n = nbs[idx].size();
+			real s = (real)0;
+			for (int j = 0; j < nb_n; j++) {
+				int nb_p = nbs[idx][j];
+				s += pow((real)1-Softmax(nb_p, cell), (real)beta);
+			}
+			rho(cell) = (real)(nb_n-c) - s;
+			//rho(cell) = s;
 		}
-		rho.Data()[i] = (real)(nb_n-c) - s;
-		//std::cout<<i<<": "<<rho.array[i]<<std::endl;
-	}
+	);
 }
 
 //////////////////////////////////////////////////////////////////////////

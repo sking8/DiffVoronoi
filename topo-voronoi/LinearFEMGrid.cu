@@ -10,14 +10,6 @@
 using namespace Meso;
 
 //=================================Helper function================================
-template<int d>
-Vector<int,d> Corner_Offset(const Vector<int, d>& center, int i) {
-	Assert(i < pow(2, d), "Corner_Offset: index out of  range");
-	if constexpr (d == 2) { return center + Vector2i(i & 0x1, (i >> 1) & 0x1); }
-	else if constexpr (d == 3) { return center + Vector3i(i & 0x1, (i >> 1) & 0x1, (i >> 2) & 0x1); }
-	else { Error("Corner_Offset: dimension not supported"); return Vector<int, d>(); }
-}
-
 template<int d> void Vector_To_Field(const VectorX& v, Field<Vector<real,d>,d>& f) {
 	Typedef_VectorD(d);
 	Assert(f.grid.Counts().prod() * d == v.size(), "Vector_To_Field: vector and field should have the same size");
@@ -73,7 +65,7 @@ template<int d> void LinearFEMGrid<d>::Allocate_K()
 		[&](const VectorDi node) {
 		int r = grid.Index(node);		//index here is the index in memory
 		for (int nb_r = 0; nb_r < grid.Neighbor_Node_Number(); nb_r++) {
-			int c = grid.Index(grid.Neighbor_Ring_Node(node, nb_r));
+			int c = grid.Index(Grid<d>::Neighbor_Ring_Node(node, nb_r));
 			if (!grid.Valid(c)) { continue; }
 			for (int rr = r * d; rr < (r + 1) * d; rr++)for (int cc = c * d; cc < (c + 1) * d; cc++) { elements.push_back(Triplet<real>(rr, cc, (real)0)); }
 		}
@@ -108,7 +100,7 @@ template<int d> void LinearFEMGrid<d>::Update_K_And_f()
 		[&](const VectorDi node) {
 			Array<int> corners(pow(2, d), 0);
 			for (int j = 0; j < corners.size(); j++) {
-				corners[j] = grid.Index(Corner_Offset<d>(node, j));
+				corners[j] = grid.Index(LinearFEMFunc::Corner_Offset<d>(node, j));
 			}
 			int mat_id = material_id(node);
 			LinearFEMFunc::Add_Cell_Stiffness_Matrix<d>(K, Ke[mat_id], corners); //Fan: exception here when grid is 33x33, may be some indexing issue!
@@ -184,7 +176,7 @@ template<int d> void LinearFEMGrid<d>::Compute_Cell_Displacement(const VectorX& 
 	int number_of_cell_nodes = pow(2, d);
 	cell_u.resize(number_of_cell_nodes * d);
 	for (int i = 0; i < number_of_cell_nodes; i++) {
-		VectorDi nb_node = Corner_Offset<d>(cell, i); int nb_node_mtx_idx = grid.Index(nb_node);
+		VectorDi nb_node = LinearFEMFunc::Corner_Offset<d>(cell, i); int nb_node_mtx_idx = grid.Index(nb_node);
 		cell_u.segment<d>(i*d) = u.segment<d>(nb_node_mtx_idx*d);
 	}
 }
