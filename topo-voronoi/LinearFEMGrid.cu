@@ -31,6 +31,7 @@ template<int d> void LinearFEMGrid<d>::Initialize(const Grid<d> _grid, const Bou
 	f.Init(grid, VectorD::Zero());
 	int n = grid.Counts().prod() * d;	// be careful about the difference between cell counts and node counts
 	compact_indices.resize(grid.Memory_Size(), (int)-1);
+	
 	K.resize(n, n);
 
 	//create the mapping
@@ -62,11 +63,16 @@ template<int d> void LinearFEMGrid<d>::Allocate_K()
 	grid.Iterate_Nodes(
 		[&](const VectorDi node) {
 		int r = Compact_Idx(grid.Index(node));
-		for (int nb_r = 0; nb_r < grid.Neighbor_Node_Number(); nb_r++) {
-			int c = grid.Index(Grid<d>::Neighbor_Ring_Node(node, nb_r));
-			if (!grid.Valid(c)) { continue; }
+		for (int nb_r = 0; nb_r < grid.Neighbor_Ring_Number(); nb_r++) {
+			VectorDi ring_node = Grid<d>::Neighbor_Ring_Node(node, nb_r);
+			int c = grid.Index(ring_node);
+			if (!grid.Valid(ring_node)) { continue; }
 			c = Compact_Idx(c);
-			for (int rr = r * d; rr < (r + 1) * d; rr++)for (int cc = c * d; cc < (c + 1) * d; cc++) { elements.push_back(Triplet<real>(rr, cc, (real)0)); }
+			for (int rr = r * d; rr < (r + 1) * d; rr++) {
+				for (int cc = c * d; cc < (c + 1) * d; cc++) { 
+					elements.push_back(Triplet<real>(rr, cc, (real)0)); 
+				}
+			}
 		}
 		}
 	);
@@ -133,7 +139,7 @@ template<int d> void LinearFEMGrid<d>::Solve()
 		amgcl::solver::cg<amgcl::backend::eigen<real> >
 	> Solver;
 
-	Solver solve(K);
+	Solver solve(K); //K is singular in 3D
 	std::cout << solve << std::endl;
 
 	// Solve the system for the given RHS:
