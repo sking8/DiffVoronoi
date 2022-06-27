@@ -8,7 +8,7 @@ public:
 	void Apply(json& j, LinearFEMGrid<d>& simulator)
 	{
 		int scale = Json::Value(j, "scale", 32);
-		real dx = 1.0 / scale;
+		real dx = 1.0 / (scale-1);
 		VectorDi grid_size = scale * VectorDi::Ones();
 		Grid<d> grid(grid_size, dx, VectorD::Zero(), CORNER);
 

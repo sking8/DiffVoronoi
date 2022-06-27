@@ -21,11 +21,8 @@ namespace VTKFunc {
 	void Write_VTS(const Field<T, d, side>& rho, std::string file_name) { //field defined in cell
 		Assert(!rho.Empty(), "VTKFunc::Output_VTS error: empty Field");
 		Typedef_VectorD(d);
-		Info("rho grid domain min {}:", rho.grid.Domain_Min());
-		Info("rho grid domain max {}:", rho.grid.Domain_Max());
-		const auto grid = Grid<d>(rho.grid.Counts()+VectorDi::Ones(), rho.grid.dx, rho.grid.Domain_Min(), CORNER);
-		Info("vts grid domain min {}:", grid.Domain_Min());
-		Info("vts grid domain max {}:", grid.Domain_Max());
+		const Grid<d> grid = Grid<d>(rho.grid.Counts()+VectorDi::Ones(), rho.grid.dx, rho.grid.Domain_Min(CENTER), CORNER);
+		
 		int nx, ny, nz;
 		if constexpr (d == 2) {
 			nx = grid.Counts()[0];
@@ -68,7 +65,6 @@ namespace VTKFunc {
 				}
 			}
 		}
-
 		structured_grid->SetPoints(nodes);
 		structured_grid->GetCellData()->AddArray(rhoArray);
 		structured_grid->GetCellData()->SetActiveScalars("rho");
