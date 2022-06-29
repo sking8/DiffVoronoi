@@ -13,11 +13,11 @@ template<int d> int LinearFEMGrid<d>::Compact_Idx(int idx) {
 
 //================================Main body=======================================
 template<int d> void LinearFEMGrid<d>::Output(DriverMetaData& metadata) {
+	if (metadata.current_frame == 0) { VTKFunc::Write_Boundary_Condition(bc, grid, metadata.base_path); }
 	//output the displacement field
 	std::string vts_name = fmt::format("u_vts{:04d}.vts", metadata.current_frame);
 	bf::path vtk_path = metadata.base_path / bf::path(vts_name);
 	VTKFunc::Write_Vector_Field(u, vtk_path.string());
-	VTKFunc::Write_Boundary_Condition(bc, grid, metadata.base_path);
 }
 
 template<int d> void LinearFEMGrid<d>::Initialize(const Grid<d> _grid, const BoundaryConditionGrid<d>& _bc, const Array<std::tuple<real,real>>& _materials, const Field<short, d>& _material_id) //this is a corner grid
@@ -93,6 +93,19 @@ template<int d> void LinearFEMGrid<d>::Update_K()
 			}
 			int mat_id = material_id(node);
 			LinearFEMFunc::Add_Cell_Stiffness_Matrix<d>(K, Ke[mat_id], corners);
+		}
+	);
+}
+
+template<int d> void LinearFEMGrid<d>::Update_K(Field<real, d>& multiplier) {
+	grid.Cell_Grid().Iterate_Nodes(
+		[&](const VectorDi node) {
+			Array<int> corners(pow(2, d), 0);
+			for (int j = 0; j < corners.size(); j++) {
+				corners[j] = Compact_Idx(grid.Index(LinearFEMFunc::Corner_Offset<d>(node, j)));
+			}
+			int mat_id = material_id(node);
+			LinearFEMFunc::Add_Cell_Stiffness_Matrix<d>(K, multiplier(node)*Ke[mat_id], corners);
 		}
 	);
 }

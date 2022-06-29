@@ -35,6 +35,7 @@ public:
 	virtual void Initialize(const Grid<d> _grid, const BoundaryConditionGrid<d>& _bc, const Array<std::tuple<real, real>>& _materials, const Field<short, d>& _material_id);
 	void Allocate_K();
 	virtual void Update_K();
+	void Update_K(Field<real,d>& multiplier);
 	virtual void Solve();
 
 	void Add_Material(const std::tuple<real, real> material);
