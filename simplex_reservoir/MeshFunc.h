@@ -7,11 +7,6 @@
 #define __AuxMeshFunc_h__
 #include "Common.h"
 template<int> class Box;
-template<int,int> class SimplicialMesh;
-template<int> class TriangleMesh;
-template<int> class TetrahedronMesh;
-template<int> class HexMesh;
-template<int> class SegmentMesh;
 
 namespace MeshFunc{
     ////Normals
@@ -64,9 +59,6 @@ namespace MeshFunc{
     template<class T_ARRAY> int Element_Faces(const Vector3i& v,T_ARRAY& faces);
     template<class T_ARRAY> int Element_Faces(const Vector4i& v,T_ARRAY& faces);
     template<class T_ARRAY> int Element_Faces(const Vector4i& v,const int ds,T_ARRAY& faces);
-	////Mesh edges and vertices
-	template<int d,int e_d> void Get_Edges(const SimplicialMesh<d,e_d>& mesh,Array<Vector2i>& edges);
-	template<int d,int e_d> void Get_Vertices(const SimplicialMesh<d,e_d>& mesh,Array<int>& vertices);
 	////Mesh conversion (volume to surface)
     void Volumetric_Mesh_Surface(const Array<Vector4i>& vol_elements,Array<Vector3i>& surf_elements);       ////Compute a surface mesh from a tet mesh
 	void Volumetric_Mesh_Surface(const Array<Vector3i>& vol_elements,Array<Vector2i>& surf_elements);		////Compute a segment mesh from a tri mesh
@@ -84,36 +76,5 @@ namespace MeshFunc{
 	////Mesh transformation
 	template<int d> Box<d> Bounding_Box(const Array<Vector<real,d> >& vertices);
 	template<int d> Box<d> Bounding_Box(const Vector<real,d>* vertices,int vn);
-	template<int d> void Rescale(Array<Vector<real, d> >& vertices, const real longest_length);
-	template<int d> Vector<real,d> Center(const Array<Vector<real,d> >& vertices);
-	template<int d> void Translate(Array<Vector<real,d> >& vertices,const Vector<real,d>& trans);
-	template<int d> void Translate_Center_To(Array<Vector<real,d> >& vertices,const Vector<real,d>& center);
-	void Rotate(Array<Vector2>& vertices,const real rot);
-	void Rotate(Array<Vector3>& vertices,const AngleAxis& rot);
-
-	void Rotate(Array<Vector2 >& vertices, const Vector2 & rot);
-	void Rotate(Array<Vector3 >& vertices, const Vector3 & rot);
-	void RotateBack(Array<Vector2 >& vertices, const Vector2& rot);
-	void RotateBack(Array<Vector3 >& vertices, const Vector3& rot);
-
-	////Mesh initialization with analytical shapes
-	template<class T_MESH> void Initialize_Herring_Bone_Mesh(const int m,const int n,const real dx,T_MESH* mesh,int axis_0=0,int axis_1=1);
-	void Initialize_Lattice_Mesh(const Vector3i& counts,const real dx,TetrahedronMesh<3>* mesh,const Array<int>* flag=nullptr);
-	void Initialize_Lattice_Mesh(const Vector2i& counts,const real dx,TriangleMesh<2>* mesh,const Array<int>* flag=nullptr);
-	template<int d> void Initialize_Lattice_Mesh(const Vector<int,d>& counts,const real dx,HexMesh<d>* mesh,const Array<int>* flag=nullptr);
-	void Initialize_Icosahedron_Mesh(const real scale,TriangleMesh<3>* mesh);
-	void Initialize_Sphere_Mesh(const real r,TriangleMesh<3>* mesh,const int sub=2);
-	void Initialize_Ellipsoid_Mesh(const real r, TriangleMesh<3>* mesh, const real a, const real b, const real c, const int sub = 2);
-	void Initialize_Cone_Mesh(const real r,const real h,const int n,TriangleMesh<3>* mesh,const int axis = 2);
-	void Initialize_Cylinder_Mesh(const real r,const real h,const int n,TriangleMesh<3>* mesh,const int axis=2);
-	
-	////Segment mesh
-	void Initialize_Circle_Mesh(const real r,const int n,SegmentMesh<2>* mesh);
-	void Initialize_Oval_Mesh(const real R,const real r,const int n,SegmentMesh<2>* mesh);
-	template<int d> real Initialize_Segment_Mesh(const Vector<real, d>& v0, const Vector<real, d>& v1, int seg_num, SegmentMesh<d>* mesh, bool include_v0 = true, bool include_v1 = true);
-
-	////Mesh operations
-	template<class T_MESH> void Merge(const Array<T_MESH*>& meshes,T_MESH* merged_mesh);
-	template<class T_MESH> void Prune_Unused_Vertices(T_MESH* mesh);
 };
 #endif
