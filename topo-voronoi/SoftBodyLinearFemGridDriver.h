@@ -58,36 +58,40 @@ public:
 	void Run()
 	{
 		soft_body.Allocate_K();
-		soft_body.Update_K_And_f();
-		soft_body.Solve();
+		Meso::DriverMetaData metadata;
+		json j = json::object_t();
+		metadata.Init(j);
+		soft_body.Advance(metadata);
+		//soft_body.Update_K_And_f();
+		//soft_body.Solve();
 
 		Write_Output_Files(0);
 	}
 
 	virtual void Write_Output_Files(const int frame)
 	{	
-		Base::Write_Output_Files(frame);
+		//Base::Write_Output_Files(frame);
 
-		if(frame==0){
-			std::string file_name=frame_dir+"/grid";
-			soft_body.grid.Write_To_File_3d(file_name);
-			std::cout<<"Write to file "<<file_name<<std::endl;}
-		
-		{std::string file_name=frame_dir+"/displacement";
-		Write_To_Field_3d<VectorX,real,d>(soft_body.u,soft_body.grid.node_counts,file_name);}
+		//if(frame==0){
+		//	std::string file_name=frame_dir+"/grid";
+		//	soft_body.grid.Write_To_File_3d(file_name);
+		//	std::cout<<"Write to file "<<file_name<<std::endl;}
+		//
+		//{std::string file_name=frame_dir+"/displacement";
+		//Write_To_Field_3d<VectorX,real,d>(soft_body.u,soft_body.grid.node_counts,file_name);}
 
-		{std::string file_name=frame_dir+"/force";
-		Write_To_Field_3d<VectorX,real,d>(soft_body.f,soft_body.grid.node_counts,file_name);}
+		//{std::string file_name=frame_dir+"/force";
+		//Write_To_Field_3d<VectorX,real,d>(soft_body.f,soft_body.grid.node_counts,file_name);}
 
-		{std::string file_name=frame_dir+"/strain";
-		Field<MatrixD,d> strain;soft_body.Compute_Strain(strain);
-		strain.Write_To_File_3d(file_name);
-		file_name=frame_dir+"/stress";
-		Field<MatrixD,d> stress;soft_body.Compute_Stress(stress);
-		stress.Write_To_File_3d(file_name);
-		Field<real,d> von_mises;soft_body.Compute_Von_Mises_Stress(von_mises);
-		file_name=frame_dir+"/von_mises_stress";
-		von_mises.Write_To_File_3d(file_name);}
+		//{std::string file_name=frame_dir+"/strain";
+		//Field<MatrixD,d> strain;soft_body.Compute_Strain(strain);
+		//strain.Write_To_File_3d(file_name);
+		//file_name=frame_dir+"/stress";
+		//Field<MatrixD,d> stress;soft_body.Compute_Stress(stress);
+		//stress.Write_To_File_3d(file_name);
+		//Field<real,d> von_mises;soft_body.Compute_Von_Mises_Stress(von_mises);
+		//file_name=frame_dir+"/von_mises_stress";
+		//von_mises.Write_To_File_3d(file_name);}
 	}
 };
 

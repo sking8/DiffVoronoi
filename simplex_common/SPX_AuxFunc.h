@@ -162,21 +162,7 @@ namespace AuxFunc{
 		#pragma omp parallel for
 		for(auto i=0;i<n;i++){Dim_Conversion<T,d1,d2>(input[i],output[i],filled_value);}
 	}
-	
-	////Dim conversion for matrices and matrix arrays
-	template<class T,int d1,int d2> void Dim_Conversion(const Matrix<T,d1>& input,Matrix<T,d2>& output,const T filled_value=(T)0)
-	{
-		constexpr int n=d1<d2?d1:d2;
-		output=Matrix<T,d2>::Constant(filled_value);
-		for(int i=0;i<n;i++)for(int j=0;j<n;j++)output(i,j)=input(i,j);
-	}
 
-	template<class T,int d1,int d2> void Dim_Conversion_Array(const Array<Matrix<T,d1> >& input,Array<Matrix<T,d2> >& output)
-	{
-		const int n=(int)input.size();
-		#pragma omp parallel for
-		for(auto i=0;i<n;i++)Dim_Conversion<T,d1,d2>(input[i],output[i]);
-	}
 
 	////create vectors with compatible dimensions
 	template<int d> Vector<real,d> V(const real x=(real)0,const real y=(real)0,const real z=(real)0);
@@ -196,10 +182,6 @@ namespace AuxFunc{
 	Vector3 Min_Eigenvector(const Matrix3& v);
 	real Min_Eigenvalue(const Matrix2& v);
 	real Min_Eigenvalue(const Matrix3& v);
-
-	template<int dim> void Svd(const Matrix<real,dim>& A,Vector<real,dim>& D,Matrix<real,dim>& U,Matrix<real,dim>& V);
-	template<int dim> void Svd_Rot_UV(const Matrix<real,dim>& A,Vector<real,dim>& D,Matrix<real,dim>& U,Matrix<real,dim>& V);
-	template<int dim> void Polar_Decomposition(const Matrix<real,dim>& A,Matrix<real,dim>& R,Matrix<real,dim>& S);
 
 	////Verbose
 	void Seperation(int n=2);

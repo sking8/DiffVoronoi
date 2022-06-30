@@ -60,11 +60,6 @@ public:
 
 	////IO
 	void Print() const;
-	virtual void Write_Binary(std::ostream& output) const;
-	virtual void Write_Binary(const std::string& file_name)const;
-	virtual void Read_Binary(std::istream& input);
-	virtual void Read_Binary(const std::string& file_name);
-	virtual void Write_To_File_3d(const std::string& file_name) const;	////works for scalar field only if dim conversion is needed
 
 	////Helper functions
 protected:
@@ -95,9 +90,9 @@ template<class T,int d> T Max(const Field<T,d>& x);
 template<class T,int d> T Min(const Field<T,d>& x);
 
 ////Dimension conversion
-template<class T,int d1,int d2> void Dim_Conversion(const Field<T,d1>& input,Field<T,d2>& output);
-template<class T,int d1,int d2> void VF_Dim_Conversion(const Field<Vector<T,d1>,d1>& input,Field<Vector<T,d2>,d2>& output);
-template<class T,int d1,int d2> void TF_Dim_Conversion(const Field<Matrix<T,d1>,d1>& input,Field<Matrix<T,d2>,d2>& output);
+//template<class T,int d1,int d2> void Dim_Conversion(const Field<T,d1>& input,Field<T,d2>& output);
+//template<class T,int d1,int d2> void VF_Dim_Conversion(const Field<Vector<T,d1>,d1>& input,Field<Vector<T,d2>,d2>& output);
+//template<class T,int d1,int d2> void TF_Dim_Conversion(const Field<Matrix<T,d1>,d1>& input,Field<Matrix<T,d2>,d2>& output);
 
 ////Flood fill
 template<int d> void Flood_Fill(Field<int,d>& psi_D,const Grid<d>& grid,const int boundary,const int interior,const int exterior,const Vector<int,d> seed=Vector<int,d>::Ones()*-1);
@@ -118,9 +113,5 @@ template<class T_ARRAY,class T,int d> void Convert_To_Field1(const T_ARRAY& inpu
 template<class T_ARRAY,class T,int d1,int d2> void Convert_To_Field(const T_ARRAY& input,Field<Vector<T,d2>,d2>& output);		////Assuming the field is initialized
 template<class T_ARRAY,class T,int d1,int d2> void Convert_To_Field1(const T_ARRAY& input,Field<Vector<T,d2>,1>& output);
 
-////IO helpers
-//Write a scalar array that represents a vector (2d or 3d) array into a Field file, 2D vectors will be converted to 3D first
-template<class T_ARRAY,class T,int d> void Write_To_Field1_3d(const T_ARRAY& input,const std::string& file_name);
-template<class T_ARRAY,class T,int d> void Write_To_Field_3d(const T_ARRAY& input,const Vector<int,d>& counts,const std::string& file_name);
 
 #endif

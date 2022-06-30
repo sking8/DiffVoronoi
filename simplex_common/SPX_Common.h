@@ -18,6 +18,7 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
+#include "Common.h"
 
 
 ////Eigen vector math type alias
@@ -96,7 +97,7 @@ using TI=int;
 using uchar=unsigned char;
 using ushort=unsigned short;
 template<class T,int d> using Vector=Eigen::Matrix<T,d,1>;
-template<class T,int d> using Matrix=Eigen::Matrix<T,d,d>;
+//template<class T,int d> using Matrix=Eigen::Matrix<T,d,d>;
 
 ////Container alias
 ////Array
@@ -116,28 +117,28 @@ template<class T,class CMP=std::less<T> > using Heap=std::priority_queue<T,std::
 template<class T1,class T2> using Pair=std::pair<T1,T2>;
 
 ////Eigen alias macros
-#define Typedef_VectorD(d) \
-using VectorD=Vector<real,d>
+//#define Typedef_VectorD(d) \
+//using VectorD=Vector<real,d>
 #define Typedef_VectorDi(d) \
 using VectorDi=Vector<int,d>
 #define Typedef_VectorDii(d) \
 using VectorD=Vector<real,d>; \
 using VectorDi=Vector<int,d>
-#define Typedef_VectorEi(d) \
-using VectorEi=Vector<int,d>;
-#define Typedef_VectorDc(d) \
-using VectorDc=Vector<C,d>
-#define Typedef_MatrixD(d) \
-using MatrixD=Matrix<real,d>
-#define Typedef_VectorD_Alias(d,VectorD_Alias) \
-using VectorD_Alias=Vector<real,d>
-#define Typedef_VectorDi_Alias(d,VectorDi_Alias) \
-using VectorDi_Alias=Vector<int,d>
-#define Typedef_MatrixD_Alias(d,MatrixD_Alias) \
-using MatrixD_Alias=Matrix<real,d>
-#define Typedef_TransformD(d) \
-using TransformD=Eigen::Transform<real,d,Eigen::Affine>; \
-using TransformDf=Eigen::Transform<float,d,Eigen::Affine>;
+//#define Typedef_VectorEi(d) \
+//using VectorEi=Vector<int,d>;
+//#define Typedef_VectorDc(d) \
+//using VectorDc=Vector<C,d>
+//#define Typedef_MatrixD(d) \
+//using MatrixD=Matrix<real,d>
+//#define Typedef_VectorD_Alias(d,VectorD_Alias) \
+//using VectorD_Alias=Vector<real,d>
+//#define Typedef_VectorDi_Alias(d,VectorDi_Alias) \
+//using VectorDi_Alias=Vector<int,d>
+//#define Typedef_MatrixD_Alias(d,MatrixD_Alias) \
+//using MatrixD_Alias=Matrix<real,d>
+//#define Typedef_TransformD(d) \
+//using TransformD=Eigen::Transform<real,d,Eigen::Affine>; \
+//using TransformDf=Eigen::Transform<float,d,Eigen::Affine>;
 
 ////Eigen Vector1 compiler fix
 Vector1 Vec1(const real s); 

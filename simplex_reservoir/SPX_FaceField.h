@@ -74,10 +74,6 @@ template<int d> void Build_MacGrid_Face_Matrix_Bijective_Mapping(const MacGrid<d
 		if (valid_face_func(std::pair<int, int>(axis, face_idx))) { grid_face_to_matrix(axis, face) = c++; matrix_to_grid_face.push_back(std::make_pair(axis, face_idx)); }}
 }
 
-////Aux functions
-////Dimension and type conversion
-template<class T,int d> void Face_To_Cell_Conversion(const FaceField<T,d>& face_field,Field<Vector<T,d>,d>& cell_field);
-template<class T,int d> void Face_To_Node_Conversion(const FaceField<T,d>& face_field,Field<Vector<T,d>,d>& node_field);
 
 ////IO functions
 template<int d> void Write_Face_Vectors_To_File_3d_Fast(const FaceField<real,d>& face_field,const MacGrid<d>&,const std::string& file_name);

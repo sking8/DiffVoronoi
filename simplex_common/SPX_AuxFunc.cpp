@@ -188,22 +188,6 @@ namespace AuxFunc{
 	real Min_Eigenvalue(const Matrix3& v)
 	{Eigen::SelfAdjointEigenSolver<Matrix3> eig(v);return Abs_Min(eig.eigenvalues());}
 
-	template<int dim> void Svd(const Matrix<real,dim>& A,Vector<real,dim>& D,Matrix<real,dim>& U,Matrix<real,dim>& V)
-	{Eigen::JacobiSVD<Matrix<real,dim> > svd(A,Eigen::ComputeFullU|Eigen::ComputeFullV);D=svd.singularValues();U=svd.matrixU();V=svd.matrixV();}
-	template void Svd<2>(const Matrix2&,Vector2&,Matrix2&,Matrix2&);
-	template void Svd<3>(const Matrix3&,Vector3&,Matrix3&,Matrix3&);
-
-	template<int dim> void Svd_Rot_UV(const Matrix<real,dim>& A,Vector<real,dim>& D,Matrix<real,dim>& U,Matrix<real,dim>& V)
-	{Eigen::JacobiSVD<Matrix<real,dim> > svd(A,Eigen::ComputeFullU|Eigen::ComputeFullV);D=svd.singularValues();U=svd.matrixU();V=svd.matrixV();
-	real det_U=U.determinant();real det_V=V.determinant();int flip_n=0;if(det_U<(real)0){U.col(dim-1)*=(real)-1;flip_n++;}if(det_V<(real)0){V.col(dim-1)*=(real)-1;flip_n++;}if(flip_n==1)D[dim-1]*=(real)-1;}
-	template void Svd_Rot_UV<2>(const Matrix2&,Vector2&,Matrix2&,Matrix2&);
-	template void Svd_Rot_UV<3>(const Matrix3&,Vector3&,Matrix3&,Matrix3&);
-
-	template<int dim> void Polar_Decomposition(const Matrix<real,dim>& A,Matrix<real,dim>& R,Matrix<real,dim>& S)
-	{Matrix<real,dim> U,V;Vector<real,dim> D;Svd<dim>(A,D,U,V);R=U*V.transpose();S=V*D.asDiagonal()*V.transpose();}
-	template void Polar_Decomposition<2>(const Matrix2&,Matrix2&,Matrix2&);
-	template void Polar_Decomposition<3>(const Matrix3&,Matrix3&,Matrix3&);
-
 	void Seperation(int n) { for (int i = 0; i < n; i++)std::cout << "----------------"; }
 	void Seperation_Line(int n){std::cout<<"\n";Seperation(n);std::cout<<"\n";}
 

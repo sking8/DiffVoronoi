@@ -79,83 +79,6 @@ template<class T,int d> void Field<T,d>::Print() const {
 	std::cout<<std::endl;
 }
 
-template<class T,int d> void Field<T,d>::Write_Binary(std::ostream &output) const
-{
-    File::Write_Binary(output,counts);
-    File::Write_Binary_Array(output,&array[0],(int)array.size());
-}
-
-template<class T, int d>
-void Field<T, d>::Write_Binary(const std::string& file_name) const
-{
-	std::ofstream output(file_name, std::ios::binary);
-	if (!output) { std::cerr << "Field<T, d>::Write_Binary error: cannot open file " << file_name << "\n "; exit(1); }
-	Write_Binary(output);
-	output.close();
-}
-
-template<class T,int d> void Field<T,d>::Read_Binary(std::istream &input)
-{
-    File::Read_Binary(input,counts);Resize(counts);
-    File::Read_Binary_Array(input,&array[0],(int)array.size());
-}
-
-template<class T, int d>
-void Field<T, d>::Read_Binary(const std::string& file_name)
-{
-	std::ifstream input(file_name, std::ios::binary);
-	if (!input) { std::cerr << "Field<T, d>::Read_Binary error: cannot open file " << file_name << "\n "; exit(0); }
-	Read_Binary(input);
-	input.close();
-}
-
-template<class T,int d> void Field<T,d>::Write_To_File_3d(const std::string& file_name) const
-{
-	if constexpr(d==1||d==3)
-		File::Write_Binary_To_File(file_name,*this);
-	else{
-		////PBG: needs conversion when d==2, works for scalar field only
-		Field<T,3> field3;Dim_Conversion<T,d,3>(*this,field3);
-		File::Write_Binary_To_File(file_name,field3);}
-}
-
-template<> void Field<Vector2,2>::Write_To_File_3d(const std::string& file_name) const
-{
-	Field<Vector3,3> field3;VF_Dim_Conversion<real,2,3>(*this,field3);
-	File::Write_Binary_To_File(file_name,field3);
-}
-
-template<> void Field<Vector2i,2>::Write_To_File_3d(const std::string& file_name) const
-{
-	Field<Vector3i,3> field3;VF_Dim_Conversion<int,2,3>(*this,field3);
-	File::Write_Binary_To_File(file_name,field3);
-}
-
-template<> void Field<Matrix2,2>::Write_To_File_3d(const std::string& file_name) const
-{
-	Field<Matrix3,3> field3;TF_Dim_Conversion<real,2,3>(*this,field3);
-	File::Write_Binary_To_File(file_name,field3);
-}
-
-template<> void Field<Matrix2i,2>::Write_To_File_3d(const std::string& file_name) const
-{
-	Field<Matrix3i,3> field3;TF_Dim_Conversion<int,2,3>(*this,field3);
-	File::Write_Binary_To_File(file_name,field3);
-}
-
-template<> void Field<Matrix2,1>::Write_To_File_3d(const std::string& file_name) const
-{
-	Field<Matrix3,1> field3;field3.Resize(counts);
-	AuxFunc::Dim_Conversion_Array<real,2,3>(array,field3.array);
-	File::Write_Binary_To_File(file_name,field3);
-}
-
-template<> void Field<Matrix2i,1>::Write_To_File_3d(const std::string& file_name) const
-{
-	Field<Matrix3i,1> field3;field3.Resize(counts);
-	AuxFunc::Dim_Conversion_Array<int,2,3>(array,field3.array);
-	File::Write_Binary_To_File(file_name,field3);
-}
 
 template class Field<double,1>;
 template class Field<double,2>;
@@ -275,23 +198,6 @@ Inst_Helper(float,2);Inst_Helper(float,3);
 
 //////////////////////////////////////////////////////////////////////////
 ////Auxiliary functions: dimension conversion
-template<class T,int d1,int d2> void Dim_Conversion(const Field<T,d1>& input,Field<T,d2>& output)
-{
-    Vector<int,d2> c2;AuxFunc::Dim_Conversion<int,d1,d2>(input.counts,c2,1);
-    output.Resize(c2);std::copy(input.array.begin(),input.array.end(),output.array.begin());
-}
-
-template<class T,int d1,int d2> void VF_Dim_Conversion(const Field<Vector<T,d1>,d1>& input,Field<Vector<T,d2>,d2>& output)
-{
-	Vector<int,d2> c2;AuxFunc::Dim_Conversion<int,d1,d2>(input.counts,c2,1);
-	output.Resize(c2);AuxFunc::Dim_Conversion_Array<T,d1,d2>(input.array,output.array,(T)0);
-}
-
-template<class T,int d1,int d2> void TF_Dim_Conversion(const Field<Matrix<T,d1>,d1>& input, Field<Matrix<T,d2>,d2>& output)
-{
-	Vector<int,d2> c2;AuxFunc::Dim_Conversion<int,d1,d2>(input.counts,c2,1);
-	output.Resize(c2);AuxFunc::Dim_Conversion_Array<T,d1,d2>(input.array,output.array);
-}
 
 template<int d> void Flood_Fill(Field<int,d>& psi_D,const Grid<d>& grid,const int boundary,
 	const int interior,const int exterior,const Vector<int,d> seed/*=Vector<int,d>::Ones()*-1*/)
@@ -347,16 +253,6 @@ template<int d> void Build_Grid_Node_Matrix_Bijective_Mapping(
 	iterate_node(iter,grid){const VectorDi& node=iter.Coord();
 		if(valid_node_func(grid.Node_Index(node))){grid_node_to_matrix(node)=c++;matrix_to_grid_node.push_back(grid.Node_Index(node));}}
 }
-
-#define Inst_Helper(T,d1,d2) \
-template void Dim_Conversion<T,d1,d2>(const Field<T,d1>&,Field<T,d2>&); \
-template void VF_Dim_Conversion<T,d1,d2>(const Field<Vector<T,d1>,d1>&,Field<Vector<T,d2>,d2>&); \
-template void TF_Dim_Conversion<T,d1,d2>(const Field<Matrix<T,d1>,d1>&,Field<Matrix<T,d2>,d2>&);
-Inst_Helper(double,3,2);Inst_Helper(double,2,3);Inst_Helper(double,2,2);Inst_Helper(double,3,3);
-Inst_Helper(float,3,2);Inst_Helper(float,2,3);Inst_Helper(float,2,2);Inst_Helper(float,3,3);
-Inst_Helper(int,3,2);Inst_Helper(int,2,3);Inst_Helper(int,2,2);Inst_Helper(int,3,3);
-Inst_Helper(ushort,3,2);Inst_Helper(ushort,2,3);Inst_Helper(ushort,2,2);Inst_Helper(ushort,3,3);
-#undef Inst_Helper
 
 #define Inst_Helper(d) \
 template void Flood_Fill<d>(Field<int,d>&,const Grid<d>&,const int,const int,const int,const Vector<int,d>);

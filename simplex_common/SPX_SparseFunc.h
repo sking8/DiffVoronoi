@@ -10,7 +10,7 @@
 
 ////Eigen sparse type alias
 template<class T> using VectorN=Eigen::Matrix<T,-1,1>;
-template<class T,int d> using Matrix=Eigen::Matrix<T,d,d>;
+//template<class T,int d> using Matrix=Eigen::Matrix<T,d,d>;
 template<class T> using SparseMatrix=Eigen::SparseMatrix<T,Eigen::RowMajor,TI>;
 using SparseMatrixT=SparseMatrix<real>;
 using SparseMatrixC=SparseMatrix<C>;
