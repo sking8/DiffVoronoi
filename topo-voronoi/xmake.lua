@@ -1,4 +1,5 @@
 add_rules("mode.debug","mode.release")
+set_languages("cxx17")
 includes("./../simplex_physics/xmake.lua")
 add_defines("WIN32")
 --includes("./../../meso/src/particle_algorithm/xmake.lua")
@@ -21,3 +22,4 @@ target("topo-voronoi")
     add_deps("simplex_physics")
     --add_deps("particle_algorithm")
     add_deps("grid_algorithm")
+    

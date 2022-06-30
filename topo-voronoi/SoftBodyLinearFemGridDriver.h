@@ -12,7 +12,7 @@
 #include "Driver.h"
 
 template<int d> class SoftBodyLinearFemGridDriver : public Driver
-{Typedef_VectorDii(d);Typedef_MatrixD(d);using Base=Driver;
+{Typedef_VectorDii(d);using Base=Driver;
 public:
 	Grid<d> grid;
 	SoftBodyLinearFemGrid<d> soft_body;
