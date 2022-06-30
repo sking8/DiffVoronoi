@@ -5,9 +5,9 @@
 //////////////////////////////////////////////////////////////////////////
 #ifndef __Driver_h__
 #define __Driver_h__
-#include "Common.h"
+#include "SPX_Common.h"
 #include "File.h"
-#include "Timer.h"
+#include "SPX_Timer.h"
 
 class Driver
 {
