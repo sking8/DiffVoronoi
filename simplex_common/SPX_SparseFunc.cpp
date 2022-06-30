@@ -8,7 +8,7 @@
 
 namespace SparseSolver{
     using ConjugateGradient=Eigen::ConjugateGradient<SparseMatrixT,Eigen::Upper,Eigen::IdentityPreconditioner>;
-    using ICPCG=Eigen::ConjugateGradient<SparseMatrixT,Eigen::Upper,Eigen::IncompleteCholesky<real,Eigen::Upper,Eigen::NaturalOrdering<int> > >;
+    //using ICPCG=Eigen::ConjugateGradient<SparseMatrixT,Eigen::Upper,Eigen::IncompleteCholesky<real,Eigen::Upper,Eigen::NaturalOrdering<int> > >;
     using BiCGSTAB=Eigen::BiCGSTAB<SparseMatrixT>;
     using SparseLU=Eigen::SparseLU<SparseMatrixT>;
 
@@ -24,7 +24,7 @@ namespace SparseSolver{
         std::cout<<"EigCg solver converge: "<<cg.iterations()<<", errorerror: "<<cg.error()<<std::endl;return true;
     }
 
-	bool IC_PCG(const SparseMatrix<real>& A,VectorN<real>& x,const VectorN<real>& b,const Params params)
+	/*bool IC_PCG(const SparseMatrix<real>& A,VectorN<real>& x,const VectorN<real>& b,const Params params)
     {
         ICPCG cg;
         cg.setMaxIterations(params.max_iter_num);
@@ -34,7 +34,7 @@ namespace SparseSolver{
         x = cg.solve(b);
         if(cg.info()!=Eigen::Success){std::cerr<<"ERROR: [Sparse] Eigen MICCG solver failed."<<std::endl;return false;}
         std::cout<<"EigCg solver converge: "<<cg.iterations()<<", error: "<<cg.error()<<std::endl;return true;
-    }
+    }*/
 
     bool BiCG_STAB(const SparseMatrix<real>& A,VectorN<real>& x,const VectorN<real>& b,const Params params)
     {

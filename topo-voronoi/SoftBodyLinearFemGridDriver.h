@@ -48,10 +48,28 @@ public:
 				else if(node[axis]==grid.node_counts[axis]-1)soft_body.Set_Displacement(node,dis);}
 		}break;
 		case 2:{
-			VectorD force=VectorD::Unit(1)*(real)-.1;
+			VectorD force=VectorD::Unit(1)*(real)-0.001;
+			if constexpr (d == 3) { force /= (real)grid.node_counts[2]; }
 			iterate_node(iter,grid){const VectorDi& node=iter.Coord();
 				if(node[0]==0)soft_body.Set_Fixed(node);
 				else if(node[1]==0&&node[0]==grid.node_counts[0]-1)soft_body.Set_Force(node,force);}
+		}break;
+		case 3: { //displacement on top
+			int axis = 1; VectorD dis = -VectorD::Unit(axis) * (real).1;
+			iterate_node(iter, grid) {
+				const VectorDi& node = iter.Coord();
+				if (node[axis] == 0)soft_body.Set_Fixed(node);
+				else if (node[axis] == grid.node_counts[axis] - 1)soft_body.Set_Displacement(node, dis);
+			}
+		}break;
+		case 4: { //press on top
+			VectorD force = VectorD::Unit(1) * (real)-0.001;
+			if constexpr (d == 3) { force /= (real)grid.node_counts[2]; }
+			iterate_node(iter, grid) {
+				const VectorDi& node = iter.Coord();
+				if (node[1] == 0)soft_body.Set_Fixed(node);
+				else if (node[1] == grid.node_counts[1] - 1)soft_body.Set_Force(node, force);
+			}
 		}break;
 		}
 	}

@@ -62,8 +62,8 @@ public:
 template<class KA> class KrylovA
 {public:
 	const KA* ka=nullptr;
-	Eigen::IncompleteCholesky<real,Eigen::Upper,Eigen::NaturalOrdering<int> > ic;
-
+	//Eigen::IncompleteCholesky<real,Eigen::Upper,Eigen::NaturalOrdering<int> > ic;
+	Eigen::DiagonalPreconditioner<real> ic;
 	KrylovA(const KA* _ka):ka(_ka){Compute_Precond();}
 
 	void Compute_Precond(){ic.compute(*ka);}
@@ -93,8 +93,8 @@ template<class KA> class KrylovPrecIdentity
 template<class KA> class KrylovPrecIC
 {public:
 	const KA* ka=nullptr;
-	Eigen::IncompleteCholesky<real,Eigen::Upper,Eigen::NaturalOrdering<int> > ic;
-
+	//Eigen::IncompleteCholesky<real,Eigen::Upper,Eigen::NaturalOrdering<int> > ic;
+	Eigen::DiagonalPreconditioner<real> ic;
 	KrylovPrecIC(const KA* _ka):ka(_ka){Initialize();}
 
 	void Initialize()
