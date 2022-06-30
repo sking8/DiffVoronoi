@@ -1,4 +1,4 @@
-#include "BoundaryCondition.h"
+#include "SPX_BoundaryCondition.h"
 #include "Particles.h"
 
 template<int d> void BoundaryConditionMacGrid<d>::Set_Psi_D(ImplicitGeometry<d>* geom, const ushort type, const real value) {

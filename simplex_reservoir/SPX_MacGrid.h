@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////////////////////
 #ifndef __MacGrid_h__
 #define __MacGrid_h__
-#include "Grid.h"
+#include "SPX_Grid.h"
 
 template<int d> class Face
 {Typedef_VectorDi(d);

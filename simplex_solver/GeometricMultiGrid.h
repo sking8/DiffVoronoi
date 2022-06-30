@@ -6,10 +6,10 @@
 
 #ifndef __GeometricMultiGrid_h__
 #define __GeometricMultiGrid_h__
-#include "MultiGrid.h"
+#include "SPX_MultiGrid.h"
 #include "KrylovSolver.h"
-#include "Field.h"
-#include "Timer.h"
+#include "SPX_Field.h"
+#include "SPX_Timer.h"
 
 namespace GeometricMultiGrid{
 using namespace MultiGrid;

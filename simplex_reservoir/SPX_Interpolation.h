@@ -5,14 +5,14 @@
 //////////////////////////////////////////////////////////////////////////
 #ifndef __Interpolation_h__
 #define __Interpolation_h__
-#include "Common.h"
-#include "Constants.h"
-#include "Grid.h"
-#include "MacGrid.h"
-#include "Field.h"
-#include "FaceField.h"
-#include "Constants.h"
-#include "AuxFunc.h"
+#include "SPX_Common.h"
+#include "SPX_Constants.h"
+#include "SPX_Grid.h"
+#include "SPX_MacGrid.h"
+#include "SPX_Field.h"
+#include "SPX_FaceField.h"
+#include "SPX_Constants.h"
+#include "SPX_AuxFunc.h"
 
 namespace IntpFunc
 {

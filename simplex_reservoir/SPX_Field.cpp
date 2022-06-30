@@ -6,10 +6,10 @@
 #include <numeric>
 #include <stack>
 #include <string>
-#include "Field.h"
+#include "SPX_Field.h"
 #include "File.h"
-#include "AuxFunc.h"
-#include "SparseFunc.h"
+#include "SPX_AuxFunc.h"
+#include "SPX_SparseFunc.h"
 
 template<class T,int d> Field<T,d>::Field(){}
 

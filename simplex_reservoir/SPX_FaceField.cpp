@@ -4,8 +4,8 @@
 // This file is part of SimpleX, whose distribution is governed by the LICENSE file.
 //////////////////////////////////////////////////////////////////////////
 #include <limits>
-#include "Interpolation.h"
-#include "FaceField.h"
+#include "SPX_Interpolation.h"
+#include "SPX_FaceField.h"
 #include "File.h"
 
 template<class T,int d> void FaceField<T,d>::Resize(const VectorDi& cell_counts)

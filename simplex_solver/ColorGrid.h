@@ -7,7 +7,7 @@
 #ifndef __ColorGrid_h__
 #define __ColorGrid_h__
 
-#include "Grid.h"
+#include "SPX_Grid.h"
 
 template<int d> class ColorGrid
 {	Typedef_VectorDii(d);

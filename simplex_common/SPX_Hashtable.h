@@ -7,7 +7,7 @@
 #define __Hashtable_h__
 #include <unordered_map>
 #include <unordered_set>
-#include "Common.h"
+#include "SPX_Common.h"
 
 ////Hash key instantiations
 namespace std{

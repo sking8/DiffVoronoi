@@ -6,7 +6,7 @@
 #ifndef __Sparse_h__
 #define __Sparse_h__
 #include <Eigen/Sparse>
-#include "Common.h"
+#include "SPX_Common.h"
 
 ////Eigen sparse type alias
 template<class T> using VectorN=Eigen::Matrix<T,-1,1>;

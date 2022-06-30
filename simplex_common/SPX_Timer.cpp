@@ -3,7 +3,7 @@
 // Copyright (c) (2018-), Mengdi Wang
 // This file is part of SimpleX, whose distribution is governed by the LICENSE file.
 //////////////////////////////////////////////////////////////////////////
-#include "Timer.h"
+#include "SPX_Timer.h"
 
 void TimerRecord::Add(double cur_time)
 {

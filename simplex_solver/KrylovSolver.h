@@ -13,8 +13,8 @@
 #ifndef __KrylovSolver_h__
 #define __KrylovSolver_h__
 #include <iostream>
-#include "Common.h"
-#include "SparseFunc.h"
+#include "SPX_Common.h"
+#include "SPX_SparseFunc.h"
 #include <Eigen/Dense>
 
 ////A sample for Krylov vector base:

@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////////////////////
 #ifndef __AuxMeshFunc_h__
 #define __AuxMeshFunc_h__
-#include "Common.h"
+#include "SPX_Common.h"
 template<int> class Box;
 
 namespace MeshFunc{

@@ -3,8 +3,8 @@
 // Copyright (c) (2018-), Bo Zhu
 // This file is part of SimpleX, whose distribution is governed by the LICENSE file.
 //////////////////////////////////////////////////////////////////////////
-#include "Grid.h"
-#include "AuxFunc.h"
+#include "SPX_Grid.h"
+#include "SPX_AuxFunc.h"
 #include "File.h"
 
 using namespace AuxFunc;

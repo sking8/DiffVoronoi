@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////////////////////
 #ifndef __Constants_h__
 #define __Constants_h__
-#include "Common.h"
+#include "SPX_Common.h"
 
 ////constants
 const real pi=(real)3.14159265358979;

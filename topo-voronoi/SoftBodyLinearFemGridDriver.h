@@ -6,8 +6,8 @@
 #ifndef __SoftBodyLinearFemGridDriver_h__
 #define __SoftBodyLinearFemGridDriver_h__
 #include <fstream>
-#include "Common.h"
-#include "Driver.h"
+#include "SPX_Common.h"
+#include "SPX_Driver.h"
 #include "SoftBodyLinearFemGrid.h"
 
 template<int d> class SoftBodyLinearFemGridDriver : public Driver

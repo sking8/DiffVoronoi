@@ -7,7 +7,7 @@
 #define __Field_h__
 #include <fstream>
 #include <functional>
-#include "Grid.h"
+#include "SPX_Grid.h"
 
 template<class T,int d> class Field
 {Typedef_VectorDi(d);

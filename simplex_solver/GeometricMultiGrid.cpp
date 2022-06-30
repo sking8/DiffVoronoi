@@ -6,11 +6,11 @@
 
 #include <numeric>
 #include <functional>
-#include "AuxFunc.h"
-#include "SparseFunc.h"
-#include "Grid.h"
-#include "Field.h"
-#include "Timer.h"
+#include "SPX_AuxFunc.h"
+#include "SPX_SparseFunc.h"
+#include "SPX_Grid.h"
+#include "SPX_Field.h"
+#include "SPX_Timer.h"
 
 #include "GeometricMultiGrid.h"
 //#ifdef USE_CUDA

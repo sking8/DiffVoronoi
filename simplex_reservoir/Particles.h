@@ -9,9 +9,9 @@
 #include <map>
 #include <set>
 #include <fstream>
-#include "Common.h"
+#include "SPX_Common.h"
 #include "ArrayPointer.h"
-#include "AuxFunc.h"
+#include "SPX_AuxFunc.h"
 
 //////////////////////////////////////////////////////////////////////////
 ////macros to define helper functions for manipulating particle attributes

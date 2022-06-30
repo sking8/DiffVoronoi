@@ -3,8 +3,8 @@
 // Copyright (c) (2018-), Bo Zhu
 // This file is part of SimpleX, whose distribution is governed by the LICENSE file.
 //////////////////////////////////////////////////////////////////////////
-#include "AuxFunc.h"
-#include "Constants.h"
+#include "SPX_AuxFunc.h"
+#include "SPX_Constants.h"
 #include <iostream>
 #include <cmath>
 

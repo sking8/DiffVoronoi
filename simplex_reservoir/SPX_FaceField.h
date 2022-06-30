@@ -6,8 +6,8 @@
 #ifndef __FaceField_h__
 #define __FaceField_h__
 #include <fstream>
-#include "MacGrid.h"
-#include "Field.h"
+#include "SPX_MacGrid.h"
+#include "SPX_Field.h"
 
 template<class T,int d> class FaceField
 {Typedef_VectorDi(d);

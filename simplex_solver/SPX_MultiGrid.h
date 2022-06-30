@@ -5,8 +5,8 @@
 //////////////////////////////////////////////////////////////////////////
 #ifndef __MultiGrid_h__
 #define __MultiGrid_h__
-#include "Common.h"
-#include "SparseFunc.h"
+#include "SPX_Common.h"
+#include "SPX_SparseFunc.h"
 
 namespace MultiGrid{
 

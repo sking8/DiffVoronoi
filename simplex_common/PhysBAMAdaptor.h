@@ -4,7 +4,7 @@
 //#####################################################################
 #ifndef __PhysBAMAdaptor_h__
 #define __PhysBAMAdaptor_h__
-#include "Common.h"
+#include "SPX_Common.h"
 ////physbam class
 template<class real> class PLANE
 {typedef Vector3 TV;public:TV normal;TV x1;PLANE(const TV& normal_input=TV(0,1,0),const TV& x1_input=TV(0,0,0)):normal(normal_input),x1(x1_input){}};

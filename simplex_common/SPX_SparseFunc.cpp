@@ -4,7 +4,7 @@
 // This file is part of SimpleX, whose distribution is governed by the LICENSE file.
 //////////////////////////////////////////////////////////////////////////
 #include <iostream>
-#include "SparseFunc.h"
+#include "SPX_SparseFunc.h"
 
 namespace SparseSolver{
     using ConjugateGradient=Eigen::ConjugateGradient<SparseMatrixT,Eigen::Upper,Eigen::IdentityPreconditioner>;

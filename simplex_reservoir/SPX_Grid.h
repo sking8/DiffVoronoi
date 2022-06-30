@@ -6,7 +6,7 @@
 #ifndef __Grid_h__
 #define __Grid_h__
 #include <fstream>
-#include "Common.h"
+#include "SPX_Common.h"
 
 ////Data structure for a uniform Cartersian grid
 template<int d> class Grid	

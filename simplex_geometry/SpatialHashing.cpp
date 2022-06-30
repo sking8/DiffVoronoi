@@ -7,11 +7,11 @@
 #define __SpatialHashing_h__
 #include <limits>
 #include <iostream>
-#include "Common.h"
-#include "Hashtable.h"
-#include "Grid.h"
+#include "SPX_Common.h"
+#include "SPX_Hashtable.h"
+#include "SPX_Grid.h"
 #include "GeometryPrimitives.h"
-#include "MeshFunc.h"
+#include "SPX_MeshFunc.h"
 
 template<int d,int bs=512> class SpatialHashing
 {Typedef_VectorDii(d);using Bucket=ArrayF<int,bs>;

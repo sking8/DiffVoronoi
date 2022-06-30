@@ -6,7 +6,7 @@
 #ifndef __ArrayPointer_h__
 #define __ArrayPointer_h__
 #include <iostream>
-#include "Common.h"
+#include "SPX_Common.h"
 #include "ArrayIO.h"
 #include <set>
 

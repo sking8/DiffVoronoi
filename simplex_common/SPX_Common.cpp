@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "SPX_Common.h"
 
 Vector1 Vec1(const real s) { Vector1 v; v[0] = s; return v; }
 Vector1i Vec1i(const int s) { Vector1i v; v[0] = s; return v; }

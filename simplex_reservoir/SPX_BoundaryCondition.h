@@ -1,9 +1,9 @@
 #ifndef __BoundaryCondition_h__
 #define __BoundaryCondition_h__
-#include "Common.h"
-#include "Hashtable.h"	
-#include "MacGrid.h"
-#include "FaceField.h"
+#include "SPX_Common.h"
+#include "SPX_Hashtable.h"	
+#include "SPX_MacGrid.h"
+#include "SPX_FaceField.h"
 #include "GeometryPrimitives.h"
 
 enum class CellType: ushort {Fluid=0,Air,Solid,IB,Source,NB,BD,Liquid};	////NB-narrowband,BD-boundary

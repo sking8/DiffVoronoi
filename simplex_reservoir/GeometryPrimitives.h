@@ -7,10 +7,10 @@
 #define __GeometryPrimitives_h__
 #include <limits>
 #include <iostream>
-#include "Common.h"
-#include "AuxFunc.h"
-#include "Constants.h"
-#include "MeshFunc.h"
+#include "SPX_Common.h"
+#include "SPX_AuxFunc.h"
+#include "SPX_Constants.h"
+#include "SPX_MeshFunc.h"
 
 //////////////////////////////////////////////////////////////////////////
 ////Base class

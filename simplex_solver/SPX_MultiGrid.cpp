@@ -3,7 +3,7 @@
 // Copyright (c) (2018-), Bo Zhu
 // This file is part of SimpleX, whose distribution is governed by the LICENSE file.
 //////////////////////////////////////////////////////////////////////////
-#include "MultiGrid.h"
+#include "SPX_MultiGrid.h"
 #include <iostream>
 
 namespace MultiGrid

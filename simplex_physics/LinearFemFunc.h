@@ -1,8 +1,8 @@
 #ifndef __LinearFemFunc_h__
 #define __LinearFemFunc_h__
-#include "Common.h"
-#include "Constants.h"
-#include "SparseFunc.h"
+#include "SPX_Common.h"
+#include "SPX_Constants.h"
+#include "SPX_SparseFunc.h"
 
 namespace ElasticParamImpl 
 {

@@ -5,10 +5,10 @@
 //////////////////////////////////////////////////////////////////////////
 #ifndef __SoftBodyLinearFemGrid_h__
 #define __SoftBodyLinearFemGrid_h__
-#include "Hashtable.h"
+#include "SPX_Hashtable.h"
 #include "LinearFemFunc.h"
-#include "BoundaryCondition.h"
-#include "Field.h"
+#include "SPX_BoundaryCondition.h"
+#include "SPX_Field.h"
 #include "GmgPcgSolverCPU.h"
 #ifdef USE_CUDA
 #include "GmgPcgSolverGPU.h"

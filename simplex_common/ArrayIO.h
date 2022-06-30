@@ -8,7 +8,7 @@
 
 
 #include "File.h"
-#include "Common.h"
+#include "SPX_Common.h"
 
 namespace BinaryDataIO {
 	//// Declaration of functions

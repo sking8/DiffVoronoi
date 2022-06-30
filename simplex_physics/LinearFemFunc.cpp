@@ -1,6 +1,6 @@
-#include "Grid.h"
-#include "AuxFunc.h"
-#include "MeshFunc.h"
+#include "SPX_Grid.h"
+#include "SPX_AuxFunc.h"
+#include "SPX_MeshFunc.h"
 #include "LinearFemFunc.h"
 
 namespace LinearFemFunc{

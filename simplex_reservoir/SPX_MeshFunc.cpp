@@ -6,10 +6,10 @@
 #include <numeric>
 #include <iostream>
 #include "GeometryPrimitives.h"
-#include "Constants.h"
-#include "Hashtable.h"
-#include "Grid.h"
-#include "MeshFunc.h"
+#include "SPX_Constants.h"
+#include "SPX_Hashtable.h"
+#include "SPX_Grid.h"
+#include "SPX_MeshFunc.h"
 //#ifdef USE_TRI2D
 //#include "Triangulation2D.h"	
 //#endif

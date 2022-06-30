@@ -7,7 +7,7 @@
 #ifndef COMPILE_WITHOUT_READ_WRITE_SUPPORT
 #ifndef __ARG_DATA__
 #define __ARG_DATA__
-#include "Common.h"
+#include "SPX_Common.h"
 #include <string>
 #include <iostream>
 

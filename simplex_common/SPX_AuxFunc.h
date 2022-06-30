@@ -6,7 +6,7 @@
 #ifndef __AuxFunc_h__
 #define __AuxFunc_h__
 #include <algorithm>
-#include "Common.h"
+#include "SPX_Common.h"
 
 namespace MathFunc {
 	////Scalar Math
