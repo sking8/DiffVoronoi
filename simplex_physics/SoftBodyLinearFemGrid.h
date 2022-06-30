@@ -15,7 +15,7 @@
 #endif
 
 template<int d> class SoftBodyLinearFemGrid
-{Typedef_VectorDii(d);Typedef_MatrixD(d);
+{Typedef_VectorDii(d);
 public:
 	Grid<d> grid;
 	SparseMatrixT K;
@@ -56,20 +56,20 @@ public:
 
 	void Compute_Cell_Displacement(const VectorX& u,const VectorDi& cell,VectorX& cell_u) const;
 	void Compute_Cell_Displacement(const VectorX& u,const Array<int>& cell_node_matrix_indices,VectorX& cell_u) const;
-    void Compute_Strain(Field<MatrixD,d>& strains) const;
-	void Compute_Stress(Field<MatrixD,d>& stresses) const;
-	void Compute_Von_Mises_Stress(Field<real,d>& von_mises,const Field<MatrixD,d>* stresses=nullptr) const;
+    void Compute_Strain(Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>& strains) const;
+	void Compute_Stress(Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>& stresses) const;
+	void Compute_Von_Mises_Stress(Field<real,d>& von_mises,const Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>* stresses=nullptr) const;
 	void Compute_Strain(VectorX& strain,const VectorDi& cell) const;
-	void Compute_Strain(MatrixD& strain,const VectorDi& cell) const;
+	void Compute_Strain(Meso::Matrix<real, d, d, Eigen::ColMajor>& strain,const VectorDi& cell) const;
 	void Compute_Stress(VectorX& stress,const VectorDi& cell,const MatrixX& E) const;
-	void Compute_Stress(MatrixD& stress,const VectorDi& cell,const MatrixX& E) const;
+	void Compute_Stress(Meso::Matrix<real, d, d, Eigen::ColMajor>& stress,const VectorDi& cell,const MatrixX& E) const;
 
 	virtual void Compute_Elastic_Compliance(Field<real, d>& energy);	////not multiplying rho
 	virtual void Compute_Elastic_Energy(Field<real, d>& energy) const;			////multiplying rho		
 
 protected:
 	int Node_Index_In_K(const VectorDi& node) const;
-	void Compute_Cell_Tensor_Helper(const Array<MatrixX>& B,const VectorX& u,Field<MatrixD,d>& tensors) const;
+	void Compute_Cell_Tensor_Helper(const Array<MatrixX>& B,const VectorX& u,Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>& tensors) const;
 };
 
 

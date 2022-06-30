@@ -108,14 +108,14 @@ template<int d> void SoftBodyLinearFemGrid<d>::Set_Force(const VectorDi& node,co
 	bc.forces[node]=force;
 }
 
-template<int d> void SoftBodyLinearFemGrid<d>::Compute_Strain(Field<MatrixD,d>& strains) const
+template<int d> void SoftBodyLinearFemGrid<d>::Compute_Strain(Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>& strains) const
 {	
     Array<MatrixX> B(1);VectorD point=VectorD::Zero();
     LinearFemFunc::Cell_Strain_Displacement_Matrix<d>(point,grid.dx,B[0]);
 	Compute_Cell_Tensor_Helper(B,u,strains);
 }
 
-template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(Field<MatrixD,d>& stresses) const
+template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>& stresses) const
 {
     MatrixX B;VectorD point=VectorD::Zero();
     LinearFemFunc::Cell_Strain_Displacement_Matrix<d>(point,grid.dx,B);
@@ -125,10 +125,10 @@ template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(Field<MatrixD,d>& 
     Compute_Cell_Tensor_Helper(S,u,stresses);
 }
 
-template<int d> void SoftBodyLinearFemGrid<d>::Compute_Von_Mises_Stress(Field<real,d>& von_mises,const Field<MatrixD,d>* stresses) const
+template<int d> void SoftBodyLinearFemGrid<d>::Compute_Von_Mises_Stress(Field<real,d>& von_mises,const Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>* stresses) const
 {
 	von_mises.Resize(grid.cell_counts);
-	const Field<MatrixD,d>* str_ptr=nullptr;Field<MatrixD,d> str;
+	const Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>* str_ptr=nullptr;Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d> str;
 	if(stresses==nullptr){Compute_Stress(str);str_ptr=&str;}else{str_ptr=stresses;}
 	for(auto i=0;i<(int)str_ptr->array.size();i++){
 		von_mises.array[i]=LinearFemFunc::Von_Mises_Stress<d>(str_ptr->array[i]);}
@@ -142,7 +142,7 @@ template<int d> void SoftBodyLinearFemGrid<d>::Compute_Strain(VectorX& strain,co
 	strain=B*cell_u;
 }
 
-template<int d> void SoftBodyLinearFemGrid<d>::Compute_Strain(MatrixD& strain,const VectorDi& cell) const
+template<int d> void SoftBodyLinearFemGrid<d>::Compute_Strain(Meso::Matrix<real, d, d, Eigen::ColMajor>& strain,const VectorDi& cell) const
 {
 	VectorX strain_vec;Compute_Strain(strain_vec,cell);
 	LinearFemFunc::Symmetric_Tensor_Vector_To_Matrix<d>(strain_vec,strain);
@@ -154,7 +154,7 @@ template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(/*rst*/VectorX& st
 	if(variable_coef)stress*=(*variable_coef)(cell);
 }
 
-template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(/*rst*/MatrixD& stress,const VectorDi& cell,const MatrixX& E) const
+template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(/*rst*/Meso::Matrix<real, d, d, Eigen::ColMajor>& stress,const VectorDi& cell,const MatrixX& E) const
 {
 	VectorX stress_vec;Compute_Stress(stress_vec,cell,E);
 	LinearFemFunc::Symmetric_Tensor_Vector_To_Matrix<d>(stress_vec,stress);
@@ -165,14 +165,14 @@ template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(/*rst*/MatrixD& st
 template<int d> int SoftBodyLinearFemGrid<d>::Node_Index_In_K(const VectorDi& node) const
 {return grid.Node_Index(node);}
 
-template<int d> void SoftBodyLinearFemGrid<d>::Compute_Cell_Tensor_Helper(const Array<MatrixX>& B,const VectorX& u,Field<MatrixD,d>& tensors) const
+template<int d> void SoftBodyLinearFemGrid<d>::Compute_Cell_Tensor_Helper(const Array<MatrixX>& B,const VectorX& u,Field<Meso::Matrix<real, d, d, Eigen::ColMajor>,d>& tensors) const
 {
 	tensors.Resize(grid.cell_counts);
 	iterate_cell(iter,grid){const VectorDi& cell=iter.Coord();int mat_id=material_id(cell);
 		if(mat_id!=-1){
 			VectorX cell_u;Compute_Cell_Displacement(u,cell,cell_u);VectorX cell_tensor=B[mat_id]*cell_u;
 			LinearFemFunc::Symmetric_Tensor_Vector_To_Matrix<d>(cell_tensor,tensors(cell));}
-		else{tensors(cell)=MatrixD::Zero();}}
+		else{tensors(cell)=Meso::Matrix<real, d, d, Eigen::ColMajor>::Zero();}}
 }
 
 template<int d> void SoftBodyLinearFemGrid<d>::Compute_Cell_Displacement(const VectorX& u,const VectorDi& cell,VectorX& cell_u) const

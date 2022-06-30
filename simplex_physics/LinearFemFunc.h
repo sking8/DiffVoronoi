@@ -59,10 +59,18 @@ namespace LinearFemFunc
 	template<int d> Vector<real,d> dNde(const Vector<real,d>& natural_coord,const int idx);				////dNde for the idx'th basis function, return a d-dim vector
 	
 	template<int d> void Cell_dNdX(const Vector<real, d>& natural_coord,const real dx,MatrixX& dNdX);		////dNdX
-	template<int d> void Hex_dNdX(const Vector<real, d>& natural_coord,const Matrix<real, d>& J_invT,MatrixX& dNdX);
+	template<int d> void Hex_dNdX(const Vector<real, d>& natural_coord,const Meso::Matrix<real, d, d, Eigen::ColMajor>& J_invT,MatrixX& dNdX);
 
-	template<int d> void Cell_dXde(const Vector<real, d>& natural_coord,const real dx,Matrix<real, d>& dXde);						////Jacobian
-	template<int d> void Hex_dXde(const Vector<real,d>& natural_coord,const ArrayF2P<Vector<real,d>,d>& X,Matrix<real,d>& dXde);
+	template<int d> void Cell_dXde(const Vector<real, d>& natural_coord,const real dx,Meso::Matrix<real, d, d, Eigen::ColMajor>& dXde)						////Jacobian
+	{
+		int n = Grid<d>::Number_Of_Cell_Incident_Nodes(); dXde = Meso::Matrix<real, d, d, Eigen::ColMajor>::Zero(); Vector<int, d> cell = Vector<int, d>::Zero();
+		for (int i = 0; i < n; i++) {
+			Vector<int, d> node = Grid<d>::Cell_Incident_Node(cell, i);
+			Vector<real, d> X = dx * node.template cast<real>();
+			dXde += X * dNde<d>(natural_coord, i).transpose();
+		}
+	}
+	template<int d> void Hex_dXde(const Vector<real,d>& natural_coord,const ArrayF2P<Vector<real,d>,d>& X,Meso::Matrix<real, d, d, Eigen::ColMajor>& dXde);
 
 	template<int d> real Cell_Strain_Displacement_Matrix(const Vector<real,d>& natural_coord,const real dx,MatrixX& B);
 	template<int d> real Hex_Strain_Displacement_Matrix(const Vector<real,d>& natural_coord,const ArrayF2P<Vector<real,d>,d>& X,MatrixX& B);
@@ -96,9 +104,9 @@ namespace LinearFemFunc
 	template<int d> void Initialize_Natural_Coord_Points(ArrayF2P<Vector<real,d>,d>& points,ArrayF2P<real,d>& weights);
 	template<int d> Vector<real,d> Natural_Coord_Point(const int idx);
 
-	template<int d> void Symmetric_Tensor_Vector_To_Matrix(const VectorX& v,Matrix<real,d>& m);
-	template<int d> void Symmetric_Tensor_Matrix_To_Vector(const Matrix<real,d>& m,VectorX& v);
-	template<int d> real Von_Mises_Stress(const Matrix<real,d>& e);
+	template<int d> void Symmetric_Tensor_Vector_To_Matrix(const VectorX& v,Meso::Matrix<real, d, d, Eigen::ColMajor>& m);
+	template<int d> void Symmetric_Tensor_Matrix_To_Vector(const Meso::Matrix<real, d, d, Eigen::ColMajor>& m,VectorX& v);
+	template<int d> real Von_Mises_Stress(const Meso::Matrix<real, d, d, Eigen::ColMajor>& e);
 
 	//static void Cell_dXde(const VectorD& natural_coord,const ArrayF2P<VectorD,d>& X,MatrixD& dXde);
 
@@ -134,7 +142,7 @@ namespace LinearFemFunc
 	//VectorD Natural_Coord_Point(const int idx);
 	//void Symmetric_Tensor_Vector_To_Matrix(const VectorX& v,/*rst*/MatrixD& m);
 	//void Symmetric_Tensor_Matrix_To_Vector(const MatrixD& m,/*rst*/VectorX& v);
-	//real Von_Mises_Stress(const Matrix<real,d>& e);
+	//real Von_Mises_Stress(const Meso::Matrix<real, d, d, Eigen::ColMajor>& e);
 };
 
 #endif

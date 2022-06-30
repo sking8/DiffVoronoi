@@ -9,6 +9,7 @@
 #include "SPX_Common.h"
 #include "SPX_Driver.h"
 #include "SoftBodyLinearFemGrid.h"
+#include "Driver.h"
 
 template<int d> class SoftBodyLinearFemGridDriver : public Driver
 {Typedef_VectorDii(d);Typedef_MatrixD(d);using Base=Driver;
@@ -58,12 +59,12 @@ public:
 	void Run()
 	{
 		soft_body.Allocate_K();
-		Meso::DriverMetaData metadata;
-		json j = json::object_t();
-		metadata.Init(j);
-		soft_body.Advance(metadata);
-		//soft_body.Update_K_And_f();
-		//soft_body.Solve();
+		//Meso::DriverMetaData metadata;
+		//json j = json::object_t();
+		//metadata.Init(j);
+		//soft_body.Advance(metadata);
+		soft_body.Update_K_And_f();
+		soft_body.Solve();
 
 		Write_Output_Files(0);
 	}

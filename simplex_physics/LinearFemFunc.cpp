@@ -89,26 +89,16 @@ namespace LinearFemFunc{
 		dNde<d>(natural_coord,dNdX);dNdX*=((real).5/dx);
 	}
 
-	template<int d> void Hex_dNdX(const Vector<real,d>& natural_coord,const Matrix<real, d>& J_invT,MatrixX& dNdX)
+	template<int d> void Hex_dNdX(const Vector<real,d>& natural_coord,const Meso::Matrix<real, d, d, Eigen::ColMajor>& J_invT,MatrixX& dNdX)
 	{
 		dNde<d>(natural_coord,dNdX);
 		dNdX=J_invT*dNdX;
 	}
 
-	template<int d> void Cell_dXde(const Vector<real, d>& natural_coord,const real dx,Matrix<real, d>& dXde)
-	{
-		int n=Grid<d>::Number_Of_Cell_Incident_Nodes();dXde=Matrix<real,d>::Zero();Vector<int,d> cell=Vector<int,d>::Zero();
-		for(int i=0;i<n;i++){
-			Vector<int, d> node=Grid<d>::Cell_Incident_Node(cell,i);
-			Vector<real,d> X=dx*node.template cast<real>();
-			dXde+=X*dNde<d>(natural_coord,i).transpose();}
-	}
-	template void Cell_dXde<2>(const Vector<real, 2>& natural_coord, const real dx, Matrix<real, 2>& dXde);
-	template void Cell_dXde<3>(const Vector<real, 3>& natural_coord, const real dx, Matrix<real, 3>& dXde);
 	
-	template<int d> void Hex_dXde(const Vector<real,d>& natural_coord,const ArrayF2P<Vector<real,d>,d>& X,Matrix<real,d>& dXde)
+	template<int d> void Hex_dXde(const Vector<real,d>& natural_coord,const ArrayF2P<Vector<real,d>,d>& X,Meso::Matrix<real, d, d, Eigen::ColMajor>& dXde)
 	{
-		int n=Grid<d>::Number_Of_Cell_Incident_Nodes();dXde=Matrix<real,d>::Zero();
+		int n=Grid<d>::Number_Of_Cell_Incident_Nodes();dXde=Meso::Matrix<real, d, d, Eigen::ColMajor>::Zero();
 		for(int i=0;i<n;i++){
 			dXde+=X[i]*dNde<d>(natural_coord,i).transpose();}
 	}
