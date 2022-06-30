@@ -6,10 +6,12 @@
 #ifndef __SoftBodyLinearFemGrid_h__
 #define __SoftBodyLinearFemGrid_h__
 #include "SPX_Hashtable.h"
-#include "LinearFemFunc.h"
+#include "SPX_LinearFemFunc.h"
 #include "SPX_BoundaryCondition.h"
 #include "SPX_Field.h"
 #include "GmgPcgSolverCPU.h"
+#include "Simulator.h"
+#include "IOHelper.h"
 #ifdef USE_CUDA
 #include "GmgPcgSolverGPU.h"
 #endif
@@ -45,6 +47,21 @@ public:
 	void Allocate_K();
 	virtual void Update_K_And_f();
 	virtual void Solve();
+
+	virtual void Output(Meso::DriverMetaData& metadata) {
+		std::string vts_name = fmt::format("u_vts{:04d}.vts", metadata.current_frame);
+		Meso::Grid<d> meso_grid(grid.node_counts, grid.dx, grid.domain_min, Meso::GridType::CORNER);
+		Meso::bf::path vtk_path = metadata.base_path / Meso::bf::path(vts_name);
+		Meso::Field<VectorD, d> meso_u(meso_grid);
+		meso_u.Calc_Nodes(
+			[&](const VectorDi node)->VectorD {
+				int idx = grid.Index(node, grid.node_counts);
+				if constexpr (d == 2) return Vector2(u[idx * 2], u[idx * 2 + 1]);
+				else if constexpr (d == 3) return Vector3(u[idx * 3], u[idx * 3 + 1], u[idx * 3 + 2]);
+			}
+		);
+		Meso::VTKFunc::Write_Vector_Field(meso_u, vtk_path.string());
+	}
 
 	void Add_Material(real youngs,real poisson);
 	//void Add_Material(MatrixX E);

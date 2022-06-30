@@ -58,15 +58,20 @@ public:
 
 	void Run()
 	{
+		Meso::DriverMetaData metadata;
+		json j = {
+			{"output_base_dir",Base::output_dir},
+			{"first_frame",0}
+		};
+		metadata.Init(j);
 		soft_body.Allocate_K();
-		//Meso::DriverMetaData metadata;
-		//json j = json::object_t();
-		//metadata.Init(j);
 		//soft_body.Advance(metadata);
 		soft_body.Update_K_And_f();
 		soft_body.Solve();
 
-		Write_Output_Files(0);
+		soft_body.Output(metadata);
+
+		//Write_Output_Files(0);
 	}
 
 	virtual void Write_Output_Files(const int frame)

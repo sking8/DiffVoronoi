@@ -3,6 +3,7 @@
 #include "SPX_Common.h"
 #include "SPX_Constants.h"
 #include "SPX_SparseFunc.h"
+#include "SPX_Grid.h"
 
 namespace ElasticParamImpl 
 {
