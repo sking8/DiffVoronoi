@@ -12,7 +12,7 @@
 
 int main(int argc,char* argv[])
 {
-    constexpr int d=3;
+    constexpr int d=2;
 
     ParseArgs parse_args;
     parse_args.Add_String_Argument("-o","output","output path");

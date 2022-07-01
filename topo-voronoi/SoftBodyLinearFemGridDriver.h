@@ -26,15 +26,25 @@ public:
 
 	void Initialize_Grid()
 	{
-		real dx=(real)1/(real)scale;VectorDi cell_counts=VectorDi::Ones()*scale;
-		grid.Initialize(cell_counts,dx);
+		switch (test) {
+		case 2: {
+			real dx = (real)1 / (real)scale; VectorDi cell_counts = VectorDi::Ones() * scale;
+			cell_counts[1] /= 2;
+			grid.Initialize(cell_counts, dx);
+		}break;
+		default: {
+			real dx = (real)1 / (real)scale; VectorDi cell_counts = VectorDi::Ones() * scale;
+			grid.Initialize(cell_counts, dx);
+		}break;
+		}
+		
 		soft_body.Initialize(grid);
 	}
 
 	void Initialize_Materials()
 	{
 		soft_body.Clear_Materials();
-		soft_body.Add_Material((real)1,(real).35);
+		soft_body.Add_Material((real)1,(real)0.3);
 		soft_body.material_id.Fill(0);
 	}
 
@@ -48,7 +58,7 @@ public:
 				else if(node[axis]==grid.node_counts[axis]-1)soft_body.Set_Displacement(node,dis);}
 		}break;
 		case 2:{
-			VectorD force=VectorD::Unit(1)*(real)-0.001;
+			VectorD force=VectorD::Unit(1)*(real)-1;
 			if constexpr (d == 3) { force /= (real)grid.node_counts[2]; }
 			iterate_node(iter,grid){const VectorDi& node=iter.Coord();
 				if(node[0]==0)soft_body.Set_Fixed(node);

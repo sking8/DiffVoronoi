@@ -121,7 +121,6 @@ template<int d> void VoronoiField<d>::Update_Rho()
 				s += pow((real)1-Softmax(nb_p, cell), (real)beta);
 			}
 			rho(cell) = (real)(nb_n-c) - s;
-			//rho(cell) = s;
 		}
 	);
 }

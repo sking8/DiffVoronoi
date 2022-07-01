@@ -60,7 +60,11 @@ public:
 				else if constexpr (d == 3) return Vector3(u[idx * 3], u[idx * 3 + 1], u[idx * 3 + 2]);
 			}
 		);
-		Meso::VTKFunc::Write_Vector_Field(meso_u, vtk_path.string());
+
+		std::ofstream myfile;
+		myfile.open("64_32_cb.txt");
+		myfile << u;
+		myfile.close();
 	}
 
 	void Add_Material(real youngs,real poisson);
