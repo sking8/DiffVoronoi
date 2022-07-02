@@ -26,16 +26,16 @@ template<int d> void VoronoiField<d>::Initialize(const Grid<d> _grid, const Arra
 	int cell_num = grid.Counts().prod();
 	nbs_searcher = std::make_shared<NeighborKDTree<d>>();
 
-	nbs.resize(cell_num);
-	int default_nb_p_num = 16;
-	for (int i = 0; i < cell_num; i++)nbs[i].reserve(default_nb_p_num);
+	nbs_c.Init(grid);
+	/*int default_nb_p_num = 16;
+	for (int i = 0; i < cell_num; i++)nbs_c[i].reserve(default_nb_p_num);*/
 
-	nbs_p.resize(p_num);
-	int default_nb_cell_num = pow(4, d);
-	for (int i = 0; i < p_num; i++)nbs_p[i].reserve(default_nb_cell_num);
+	//nbs_p.resize(p_num);
+	//int default_nb_cell_num = pow(4, d);
+	//for (int i = 0; i < p_num; i++)nbs_p[i].reserve(default_nb_cell_num);
 
-	drho_dx.resize(cell_num);
-	drho_dD.resize(cell_num);
+	drho_dx.Init(grid);
+	//drho_dD.resize(cell_num);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -47,6 +47,7 @@ template<int d> void VoronoiField<d>::Advance(DriverMetaData& metadata)
 	Update_Neighbors();
 	Update_Softmax_Sum();
 	Update_Rho();
+	Numerical_Derivative_DRho_DX();
 }
 
 template<int d> void VoronoiField<d>::Update_A()
@@ -68,16 +69,15 @@ template<int d> void VoronoiField<d>::Update_Neighbors()
 
 	grid.Exec_Nodes(
 		[&](const VectorDi cell) {
-			int idx = grid.Index(cell);
-			nbs[idx].clear();
+			nbs_c(cell).clear();
 			VectorD pos = grid.Position(cell);
 			if (active(cell) != (int)TopoCellType::Active) { return; }
 
-			nbs_searcher->Find_K_Nearest_Nbs(pos, nb_n, nbs[idx]);
-			int nb_n = nbs[idx].size();
+			nbs_searcher->Find_K_Nearest_Nbs(pos, nb_n, nbs_c(cell));
+			int nb_n = nbs_c(cell).size();
 			if (nb_n > 0) {
-				drho_dx[idx].resize(nb_n);
-				drho_dD[idx].resize(nb_n);
+				drho_dx(cell).resize(nb_n);
+				//drho_dD[idx].resize(nb_c_n);
 			}
 		}
 	);
@@ -95,9 +95,9 @@ template<int d> void VoronoiField<d>::Update_Softmax_Sum()
 			}
 
 			real sm_sum = (real)0;
-			int nb_n = nbs[idx].size();
-			for (int j = 0; j < nb_n; j++) {
-				int pid = nbs[idx][j];
+			int nb_c_n = nbs_c(cell).size();
+			for (int j = 0; j < nb_c_n; j++) {
+				int pid = nbs_c(cell)[j];
 				real dis = Dist(pid, pos);
 				sm_sum += exp(-dis);
 			}
@@ -110,14 +110,13 @@ template<int d> void VoronoiField<d>::Update_Rho()
 {
 	grid.Exec_Nodes(
 		[&](const VectorDi cell) {
-			int idx = grid.Index(cell);
 			VectorD pos = grid.Position(cell);
 			if (active(cell) != (int)TopoCellType::Active) { return; }
 			
-			int nb_n = nbs[idx].size();
+			int nb_n = nbs_c(cell).size();
 			real s = (real)0;
 			for (int j = 0; j < nb_n; j++) {
-				int nb_p = nbs[idx][j];
+				int nb_p = nbs_c(cell)[j];
 				s += pow((real)1-Softmax(nb_p, cell), (real)beta);
 			}
 			rho(cell) = (real)(nb_n-c) - s;
@@ -128,31 +127,33 @@ template<int d> void VoronoiField<d>::Update_Rho()
 //////////////////////////////////////////////////////////////////////////
 ////sensitivities, Fan: subject to change
 
-//template<int d> void VoronoiField<d>::Update_DRho_DX()
-//{
-//	int cell_num = grid.Counts().prod();
-//#pragma omp parallel for
-//	for (int i = 0; i < cell_num; i++) {
-//		VectorDi cell = grid.Coord(i);
-//		VectorD pos = grid.Position(cell);
-//		if (active(cell) != (int)TopoCellType::Active)continue;
-//
-//		int nb_n = nbs[i].size();
-//		for (int j = 0; j < nb_n; j++) {
-//			int n = nbs[i][j];
-//			VectorD drhodx = VectorD::Zero();
-//			for (int k = 0; k < nb_n; k++) {
-//				int m = nbs[i][k];
-//				VectorD dsdx = dS_dX(m, n, cell);
-//				real S = Softmax(m, cell);
-//				drhodx -= beta * pow(S, beta - 1) * dsdx;
-//			}
-//
-//			drho_dx[i][j] = drhodx;
-//		}
-//	}
-//}
-//
+template<int d> void VoronoiField<d>::Update_DRho_DX()
+{
+	grid.Exec_Nodes(
+		[&](const VectorDi cell) {
+			int idx = grid.Index(cell);
+			VectorD pos = grid.Position(cell);
+			if (active(cell) != (int)TopoCellType::Active) { return; }
+
+			int nb_c_n = nbs_c(cell).size();
+			real s = (real)0;
+			for (int j = 0; j < nb_c_n; j++) {
+				int nb_p = nbs_c(cell)[j];
+				VectorD drhodx = VectorD::Zero();
+				for (int k = 0; k < nb_c_n; k++) {
+					int m = nbs_c(cell)[k];
+					VectorD dsdx = dS_dX(m, nb_p, cell);
+					real S = Softmax(m, cell);
+					drhodx += beta * pow(1 - S, beta - 1) * dsdx;
+				}
+				drho_dx(cell)[j] = drhodx;
+			}
+		}
+	);
+
+	Info("Derivative drho_dx is updated");
+}
+
 //template<int d> void VoronoiField<d>::Update_DRho_DD()
 //{
 //	int cell_num = grid.Counts().prod();
@@ -162,12 +163,12 @@ template<int d> void VoronoiField<d>::Update_Rho()
 //		VectorD pos = grid.Position(cell);
 //		if (active(cell) != (int)TopoCellType::Active)continue;
 //
-//		int nb_n = nbs[i].size();
-//		for (int j = 0; j < nb_n; j++) {
-//			int n = nbs[i][j];
+//		int nb_c_n = nbs_c[i].size();
+//		for (int j = 0; j < nb_c_n; j++) {
+//			int n = nbs_c[i][j];
 //			MatrixD drhodd = MatrixD::Zero();
-//			for (int k = 0; k < nb_n; k++) {
-//				int m = nbs[i][k];
+//			for (int k = 0; k < nb_c_n; k++) {
+//				int m = nbs_c[i][k];
 //				MatrixD dsdd = dS_dD(m, n, cell);
 //				real S = Softmax(m, cell);
 //				drhodd -= beta * pow(S, beta - 1) * dsdd;
@@ -177,47 +178,54 @@ template<int d> void VoronoiField<d>::Update_Rho()
 //		}
 //	}
 //}
-//
-////////////////////////////////////////////////////////////////////////////
-//////numerical derivatives
-//
-//template<int d> void VoronoiField<d>::Numerical_Derivative_DRho_DX()
-//{
-//	real delta_x = (real)1e-6;
-//	int p_size = particles.Size();
-//
-//	std::cout << "Numerical DRho_DX" << std::endl;
-//	Update_DRho_DX();
-//	Field<real, d> rho_test = rho;
-//	int cell_num = grid.Counts().prod();
-//	Array<Array<VectorD> > numeric_derv(cell_num);
-//	for (int i = 0; i < cell_num; i++) {
-//		int nb_n = nbs[i].size();
-//		numeric_derv[i].resize(nb_n);
-//		for (int j = 0; j < nb_n; j++) {
-//			int nb_p = nbs[i][j];
-//			VectorD old_pos = particles.x(nb_p);
-//			for (int k = 0; k < d; k++) {
-//				particles.x(nb_p)[k] += delta_x;
-//				Update_Softmax_Sum();
-//				Update_Rho();
-//				numeric_derv[i][j][k] = (rho.Data()[i] - rho_test.Data()[i]) / delta_x;
-//				particles.x(nb_p)[k] = old_pos[k];
-//			}
-//		}
-//	}
-//
-//	for (int i = 0; i < cell_num; i++) {
-//		int nb_n = nbs[i].size();
-//		for (int j = 0; j < nb_n; j++) {
-//			if (!numeric_derv[i][j].isApprox(drho_dx[i][j], 1e-2)) {
-//				std::cout << "cell " << i << ", nb " << j << ", analytical: " << drho_dx[i][j].transpose()
-//					<< ", numerical: " << numeric_derv[i][j].transpose() << std::endl;
-//			}
-//		}
-//	}
-//}
-//
+
+//////////////////////////////////////////////////////////////////////////
+////numerical derivatives
+
+template<int d> void VoronoiField<d>::Numerical_Derivative_DRho_DX()
+{
+	real delta_x = (real)1e-6;
+	int p_size = particles.Size();
+
+	std::cout << "Numerical DRho_DX" << std::endl;
+	Update_DRho_DX();
+	Field<real, d> rho_test = rho;
+	Field<Array<VectorD>,d> numeric_derv(grid);
+	
+	grid.Exec_Nodes(
+		[&](const VectorDi cell) {
+			int nb_c_n = nbs_c(cell).size();
+			numeric_derv(cell).resize(nb_c_n);
+			Info("cell:{}", cell);
+			for (int j = 0; j < nb_c_n; j++) {
+				int nb_p = nbs_c(cell)[j];
+				VectorD old_pos = particles.x(nb_p);
+				for (int k = 0; k < d; k++) { //iterate through dimensions
+					particles.x(nb_p)[k] += delta_x;
+					Update_Softmax_Sum();
+					Update_Rho();
+					numeric_derv(cell)[j][k] = (rho(cell) - rho_test(cell)) / delta_x;
+					particles.x(nb_p)[k] = old_pos[k];
+				}
+			}
+		}
+	);
+
+	grid.Exec_Nodes(
+		[&](const VectorDi cell) {
+			int nb_c_n = nbs_c(cell).size();
+			numeric_derv(cell).resize(nb_c_n);
+			for (int j = 0; j < nb_c_n; j++) {
+				if (!Meso::MathFunc::All_Close(numeric_derv(cell)[j],drho_dx(cell)[j],(real)1e-2,(real)1e-3)) {
+					Warn("cell:{}, nb:{}, analyticle:{}, numerical:{}", cell, j, drho_dx(cell)[j], numeric_derv(cell)[j]);
+				}
+			}
+		}
+	);
+
+	Pass("Finished test of numerical derivative");
+}
+
 //template<int d> void VoronoiField<d>::Numerical_Derivative_DRho_DD()
 //{
 //	real delta_x = (real)1e-6;
@@ -229,10 +237,10 @@ template<int d> void VoronoiField<d>::Update_Rho()
 //	int cell_num = grid.Counts().prod();
 //	Array<Array<MatrixD> > numeric_derv(cell_num);
 //	for (int i = 0; i < cell_num; i++) {
-//		int nb_n = nbs[i].size();
-//		numeric_derv[i].resize(nb_n);
-//		for (int j = 0; j < nb_n; j++) {
-//			int nb_p = nbs[i][j];
+//		int nb_c_n = nbs_c[i].size();
+//		numeric_derv[i].resize(nb_c_n);
+//		for (int j = 0; j < nb_c_n; j++) {
+//			int nb_p = nbs_c[i][j];
 //			MatrixD old_D = particles.D(nb_p);
 //			for (int k = 0; k < d; k++) {
 //				for (int l = 0; l < d; l++) {
@@ -248,8 +256,8 @@ template<int d> void VoronoiField<d>::Update_Rho()
 //	}
 //
 //	for (int i = 0; i < cell_num; i++) {
-//		int nb_n = nbs[i].size();
-//		for (int j = 0; j < nb_n; j++) {
+//		int nb_c_n = nbs_c[i].size();
+//		for (int j = 0; j < nb_c_n; j++) {
 //			if (!numeric_derv[i][j].isApprox(drho_dD[i][j], 1e-2)) {
 //				std::cout << "cell " << i << ", nb " << j << ",\nanalytical:\n" << drho_dD[i][j]
 //					<< "\nnumerical:\n" << numeric_derv[i][j] << std::endl;

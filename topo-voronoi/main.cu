@@ -1,52 +1,79 @@
-//#####################################################################
-// Main
-// Copyright (c) (2018-), Bo Zhu, boolzhu@gmail.com
-// This file is part of SLAX, whose distribution is governed by the LICENSE file.
-//#####################################################################
-#include <iostream>
-#include "ParseArgs.h"
-#include "SoftBodyLinearFemGridDriver.h"
+#include "Json.h"
+#include "omp.h"
+//#include "TopoOptInitializer.h"
+//#include "TopologyOptimization.h"
+#include "Driver.h"
+#include "OptimizerDriver.h"
+#include "VoronoiField.h"
+#include "VoronoiFieldInitializer.h"
+//#include "LinearFEMGrid.h"
+//#include "LinearFEMGridInitializer.h"
 
-#ifndef __Main_cpp__
-#define __Main_cpp__
+using namespace Meso;
 
-int main(int argc,char* argv[])
-{
-    constexpr int d=2;
+//template<int d>
+//void Run_Topology_Optimization(json& j) {
+//	TopologyOptimization<d> optimizer;
+//	TopoOptInitializer<d> scene;
+//	OptimizerDriver driver;
+//	driver.Run(j, scene, optimizer);
+//}
 
-    ParseArgs parse_args;
-    parse_args.Add_String_Argument("-o","output","output path");
-    parse_args.Add_Integer_Argument("-s",64,"resolution");
-    parse_args.Add_Integer_Argument("-test",2,"test");
-	parse_args.Add_Integer_Argument("-driver",1,"driver");
-	parse_args.Add_Integer_Argument("-lf",200,"last frame");
-	parse_args.Add_Integer_Argument("-fr", 25, "frame rate");
-	parse_args.Add_Double_Argument("-ts", (real)0.02, "time step size");
-	parse_args.Add_Double_Argument("-dp", (real)0.1, "damping");
-	parse_args.Add_Option_Argument("-qs", "use quasi-static simulation");
-    parse_args.Parse(argc,argv);
-
-    std::string output_dir=parse_args.Get_String_Value("-o");
-    const int scale=parse_args.Get_Integer_Value("-s");
-	const int driver=parse_args.Get_Integer_Value("-driver");
-	const int test=parse_args.Get_Integer_Value("-test");
-	const int last_frame=parse_args.Get_Integer_Value("-lf");
-	const int frame_rate = parse_args.Get_Integer_Value("-fr");
-	const real time_step = parse_args.Get_Double_Value("-ts");
-	const bool use_quasi_static = parse_args.Get_Option_Value("-qs");
-	const real damping = parse_args.Get_Double_Value("-dp");
-
-	switch(driver){
-	case 1:{
-		SoftBodyLinearFemGridDriver<d> driver;
-		driver.scale=scale;
-		driver.output_dir=output_dir;
-		driver.test=test;
-		driver.last_frame=last_frame;
-		driver.Initialize();
-		driver.Run();	
-	}break;
-	}
+template<int d>
+void Run_Voronoi_Field(json& j) {
+	VoronoiField<d> voronoi_field;
+	VoronoiFieldInitializer<d> scene;
+	Driver driver;
+	driver.Run(j, scene, voronoi_field);
 }
 
-#endif
+//template<int d>
+//void Run_Linear_FEM_Grid(json& j) {
+//	LinearFEMGrid<d> voronoi_field;
+//	LinearFEMGridInitializer<d> scene;
+//	Driver driver;
+//	driver.Run(j, scene, voronoi_field);
+//}
+
+int main(int argc, char** argv) {
+	try {
+		json j;
+
+		if (argc > 1) {
+			std::ifstream json_input(argv[1]);
+			json_input >> j;
+			json_input.close();
+		}
+
+		int thread_num = Json::Value(j, "thread_num", omp_get_max_threads());
+		omp_set_num_threads(thread_num);
+		Info("Using {} threads, out of {} available threads", omp_get_num_threads(), omp_get_max_threads());
+
+		int dim = Json::Value(j, "dimension", 2);
+		std::string app = Json::Value(j, "app", std::string("topology_optimization"));
+
+		/*if (app == "topology_optimization") {
+			if (dim == 2) { Run_Topology_Optimization<2>(j); }
+			else if (dim == 3) { Run_Topology_Optimization<3>(j); }
+			else { Error("Dimension not supported!"); }
+		}
+		else */if (app == "voronoi_field") {
+			if (dim == 2) { Run_Voronoi_Field<2>(j); }
+			else if (dim == 3) { Run_Voronoi_Field<3>(j); }
+			else { Error("Dimension not supported!"); }
+		}
+		/*else if (app == "linear_fem_grid") {
+			if (dim == 2) { Run_Linear_FEM_Grid<2>(j); }
+			else if (dim == 3) { Run_Linear_FEM_Grid<3>(j); }
+			else { Error("Dimension not supported!"); }
+		}*/
+		else {
+			Error("main: Invalid app");
+		}
+	}
+	catch (nlohmann::json::exception& e)
+	{
+		Meso::Info("json exception {}", e.what());
+	}
+	return 0;
+}

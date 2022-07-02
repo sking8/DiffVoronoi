@@ -86,7 +86,7 @@ namespace LinearFemFunc{
 
 	template<int d> void Cell_dNdX(const Vector<real, d>& natural_coord,const real dx,MatrixX& dNdX)
 	{
-		dNde<d>(natural_coord,dNdX);dNdX*=((real).5/dx);
+		dNde<d>(natural_coord,dNdX); dNdX *= ((real)2 / dx);//changed here
 	}
 
 	template<int d> void Hex_dNdX(const Vector<real,d>& natural_coord,const Meso::Matrix<real, d, d, Eigen::ColMajor>& J_invT,MatrixX& dNdX)
