@@ -23,6 +23,7 @@ template<int d> void SoftBodyLinearFemGrid<d>::Initialize(const Grid<d> _grid, c
 	K.resize(n,n);
 	u.resize(n);u.fill((real)0);
 	f.resize(n);f.fill((real)0);
+	Allocate_K();
 }
 
 template<int d> void SoftBodyLinearFemGrid<d>::Add_Material(const std::tuple<real, real> material)

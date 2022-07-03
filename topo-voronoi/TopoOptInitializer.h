@@ -37,6 +37,6 @@ public:
 		Field<short, d> material_id(spx_grid.cell_counts, 0);
 		SoftBodyLinearFemGrid<d> linear_fem_grid;
 		linear_fem_grid.Initialize(spx_grid, spx_bc, materials, material_id);
-		optimizer.Init(linear_fem_grid,corner_grid, target_frac, mov_lim, power);
+		optimizer.Init(linear_fem_grid, grid, target_frac, mov_lim, power);
 	}
 };

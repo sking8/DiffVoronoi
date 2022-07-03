@@ -29,6 +29,7 @@ public:
 	////SIMP parameters
 	Meso::Field<real, d>	fem_variable_coef;				//rho^p, the multiplier in front of Young's modulus
 	Field<real, d>			spx_fem_variable_coef;
+	Meso::Field<real, d>	energy_f;
 	int power;										//penalizing power
 	real target_frac;
 	real mov_lim;									//move limit for each iteration, can be tuned 
@@ -59,7 +60,7 @@ public:
 			meta_data.data_output << meta_data.iter_count << "," << obj << "," << vol_frac << ",\n";
 		}*/
 
-		std::string vts_name/* = fmt::format("vts{:04d}.vts", meta_data.iter_count)*/;
+		std::string vts_name = fmt::format("vts{:04d}.vts", meta_data.iter_count);
 		Meso::bf::path vtk_path = meta_data.base_path / Meso::bf::path(vts_name);
 		Meso::VTKFunc::Write_VTS(rho, vtk_path.string());
 		
@@ -72,7 +73,7 @@ public:
 				else if constexpr (d == 3) return Vector3(linear_fem_grid.u[idx * 3], linear_fem_grid.u[idx * 3 + 1], linear_fem_grid.u[idx * 3 + 2]);
 			}
 		);
-		vts_name /*= fmt::format("u_vts{:04d}.vts", meta_data.iter_count)*/;
+		vts_name = fmt::format("u_vts{:04d}.vts", meta_data.iter_count);
 		vtk_path = meta_data.base_path / Meso::bf::path(vts_name);
 		Meso::VTKFunc::Write_Vector_Field(meso_u, vtk_path.string());
 	}
@@ -82,7 +83,7 @@ public:
 		Meso::ArrayFunc::Minus(temp, intmed_var);
 		real change = Meso::ArrayFunc::Max_Abs<real>(temp);
 
-		if (change < meta_data.tol) { return true; }
+		if (change < meta_data.tol) { Meso::Pass("Converged!"); return true; }
 		return false;
 	}
 
@@ -101,6 +102,7 @@ public:
 		constraint_grads.resize(cell_num);
 		fem_variable_coef.Init(grid, (real)0);
 		rho.Init(grid,(real)_target_frac);						//padding cells also have _target_frac
+		energy_f.Init(grid, (real)0);
 		mma_solver = std::make_shared<MMASolver>(cell_num, 1);	//one constraint
 	}
 
@@ -116,7 +118,6 @@ public:
 
 		linear_fem_grid.Update_K_And_f(fem_variable_coef);
 		linear_fem_grid.Solve();
-		Meso::Field<real,d> energy_f;
 		linear_fem_grid.Compute_Elastic_Energy(energy_f);
 		Meso::ArrayFunc::Multiply(energy_f.Data(), fem_variable_coef.Data());
 		obj = Meso::ArrayFunc::Sum(energy_f.Data());
@@ -144,7 +145,6 @@ public:
 
 	////var -> dobj_drho
 	void Compute_Gradient() {
-		Meso::Field<real, d> energy_f;
 		linear_fem_grid.Compute_Elastic_Energy(energy_f); //may not calculate twice
 
 		int counter = 0;
@@ -182,5 +182,40 @@ public:
 	}
 	real Hat_Grad(const real x) const {
 		return beta * ((real)1 - pow(tanh(beta * (x - (real)0.5)), 2)) / tanh(beta / (real)2) / (real)2;
+	}
+
+	void Numerical_Derivative_DObj_DRho()
+	{
+		//real delta_x = (real)1e-6;
+		//int p_size = particles.Size();
+
+		//std::cout << "Numerical DRho_DX" << std::endl;
+		//Update_DRho_DX();
+		//Field<real, d> rho_test = rho;
+		//Field<Array<VectorD>, d> numeric_derv(grid);
+
+		////should not parallelize here
+		//grid.Iterate_Nodes(
+		//	[&](const VectorDi cell) {
+		//		int nb_c_n = nbs_c(cell).size();
+		//		numeric_derv(cell).resize(nb_c_n);
+		//		for (int j = 0; j < nb_c_n; j++) {
+		//			int nb_p = nbs_c(cell)[j];
+		//			VectorD old_pos = particles.x(nb_p);
+		//			for (int k = 0; k < d; k++) { //iterate through dimensions
+		//				particles.x(nb_p)[k] += delta_x;
+		//				Update_Softmax_Sum();
+		//				Update_Rho();
+		//				numeric_derv(cell)[j][k] = (rho(cell) - rho_test(cell)) / delta_x;
+		//				particles.x(nb_p)[k] = old_pos[k];
+		//			}
+		//			if (!Meso::MathFunc::All_Close(numeric_derv(cell)[j], drho_dx(cell)[j], (real)1e-2, (real)1e-3)) {
+		//				Warn("cell:{}, nb:{}, analytical:{}, numerical:{}", cell, j, drho_dx(cell)[j], numeric_derv(cell)[j]);
+		//			}
+		//		}
+		//	}
+		//);
+
+		//Pass("Finished test of dobj drho");
 	}
 };
