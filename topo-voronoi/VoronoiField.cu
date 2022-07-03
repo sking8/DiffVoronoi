@@ -87,8 +87,6 @@ template<int d> void VoronoiField<d>::Update_Softmax_Sum()
 {
 	grid.Exec_Nodes(
 		[&](const VectorDi cell) {
-			int idx = grid.Index(cell);
-
 			VectorD pos = grid.Position(cell);
 			if (active(cell) != (int)TopoCellType::Active) {
 				soft_max_sum(cell) = (real)0.; return;
@@ -131,7 +129,6 @@ template<int d> void VoronoiField<d>::Update_DRho_DX()
 {
 	grid.Exec_Nodes(
 		[&](const VectorDi cell) {
-			int idx = grid.Index(cell);
 			VectorD pos = grid.Position(cell);
 			if (active(cell) != (int)TopoCellType::Active) { return; }
 
@@ -192,11 +189,11 @@ template<int d> void VoronoiField<d>::Numerical_Derivative_DRho_DX()
 	Field<real, d> rho_test = rho;
 	Field<Array<VectorD>,d> numeric_derv(grid);
 	
-	grid.Exec_Nodes(
+	//should not parallelize here
+	grid.Iterate_Nodes(
 		[&](const VectorDi cell) {
 			int nb_c_n = nbs_c(cell).size();
 			numeric_derv(cell).resize(nb_c_n);
-			Info("cell:{}", cell);
 			for (int j = 0; j < nb_c_n; j++) {
 				int nb_p = nbs_c(cell)[j];
 				VectorD old_pos = particles.x(nb_p);
@@ -207,17 +204,8 @@ template<int d> void VoronoiField<d>::Numerical_Derivative_DRho_DX()
 					numeric_derv(cell)[j][k] = (rho(cell) - rho_test(cell)) / delta_x;
 					particles.x(nb_p)[k] = old_pos[k];
 				}
-			}
-		}
-	);
-
-	grid.Exec_Nodes(
-		[&](const VectorDi cell) {
-			int nb_c_n = nbs_c(cell).size();
-			numeric_derv(cell).resize(nb_c_n);
-			for (int j = 0; j < nb_c_n; j++) {
-				if (!Meso::MathFunc::All_Close(numeric_derv(cell)[j],drho_dx(cell)[j],(real)1e-2,(real)1e-3)) {
-					Warn("cell:{}, nb:{}, analyticle:{}, numerical:{}", cell, j, drho_dx(cell)[j], numeric_derv(cell)[j]);
+				if (!Meso::MathFunc::All_Close(numeric_derv(cell)[j], drho_dx(cell)[j], (real)1e-2, (real)1e-3)) {
+					Warn("cell:{}, nb:{}, analytical:{}, numerical:{}", cell, j, drho_dx(cell)[j], numeric_derv(cell)[j]);
 				}
 			}
 		}
