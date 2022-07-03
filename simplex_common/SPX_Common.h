@@ -16,7 +16,7 @@
 #include <cmath>
 
 #include <fmt/core.h>
-#include <fmt/ranges.h>
+//#include <fmt/ranges.h>
 
 #include "Common.h"
 

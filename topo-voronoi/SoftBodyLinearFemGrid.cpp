@@ -9,23 +9,28 @@
 //template<int d> SoftBodyLinearFemGrid<d>::SoftBodyLinearFemGrid():colored_cell_ptr(Pow(2,d)+1)
 //{for(int i=0;i<colored_cell_ptr.size();i++)colored_cell_ptr[i]=i;}
 
-template<int d> void SoftBodyLinearFemGrid<d>::Initialize(const Grid<d> _grid)
+template<int d> void SoftBodyLinearFemGrid<d>::Initialize(const Grid<d> _grid, const BoundaryConditionGrid<d>& _bc, const Array<std::tuple<real, real>>& _materials, const Field<short, d>& _material_id)
 {
 	colored_cell_ptr.resize(Pow(2, d) + 1);
 	for (int i = 0; i < colored_cell_ptr.size(); i++)colored_cell_ptr[i] = i;
 
 	grid=_grid;
-	Add_Material((real)1,(real).45);
-	material_id.Resize(grid.cell_counts,0);
+	bc = _bc;
+	material_id = _material_id;
+	for (int i = 0; i < _materials.size(); i++) { Add_Material(_materials[i]); }
 
 	int n=grid.node_counts.prod()*d;
-	K.resize(n,n);u.resize(n);u.fill((real)0);f.resize(n);f.fill((real)0);
+	K.resize(n,n);
+	u.resize(n);u.fill((real)0);
+	f.resize(n);f.fill((real)0);
 }
 
-template<int d> void SoftBodyLinearFemGrid<d>::Add_Material(real youngs,real poisson)
+template<int d> void SoftBodyLinearFemGrid<d>::Add_Material(const std::tuple<real, real> material)
 {
-	MatrixX E0;LinearFemFunc::Strain_Stress_Matrix_Linear<d>(youngs,poisson,E0);E.push_back(E0);
-	MatrixX Ke0;LinearFemFunc::Cell_Stiffness_Matrix<d>(youngs,poisson,grid.dx,Ke0);Ke.push_back(Ke0);
+	auto [youngs, poisson] = material;
+	MatrixX Ke0; //stiffness matrix of the material
+	LinearFemFunc::Cell_Stiffness_Matrix<d>(youngs, poisson, grid.dx, Ke0);
+	Ke.push_back(Ke0);
 }
 
 template<int d> void SoftBodyLinearFemGrid<d>::Allocate_K()
@@ -52,7 +57,7 @@ template<int d> void SoftBodyLinearFemGrid<d>::Update_K_And_f()
 			ArrayF2P<VectorDi,d> cell_nodes;grid.Cell_Incident_Nodes(cell,cell_nodes);
 			Array<int> cell_node_indices(Grid<d>::Number_Of_Cell_Incident_Nodes(),0);
 			for(int j=0;j<cell_node_indices.size();j++)cell_node_indices[j]=Node_Index_In_K(cell_nodes[j]);
-			LinearFemFunc::Add_Cell_Stiffness_Matrix<d>(K,variable_coef?Ke[mat_id]*(*variable_coef)(cell):Ke[mat_id],cell_node_indices);}}
+			LinearFemFunc::Add_Cell_Stiffness_Matrix<d>(K,Ke[mat_id],cell_node_indices);}}
 
 	////Update rhs
 	f.fill((real)0);
@@ -63,6 +68,38 @@ template<int d> void SoftBodyLinearFemGrid<d>::Update_K_And_f()
 	for(auto& b:bc.psi_D_values){VectorDi node=b.first;VectorD dis=b.second;
 		for(int axis=0;axis<d;axis++){int idx=Node_Index_In_K(node)*d+axis;
 			LinearFemFunc::Set_Dirichlet_Boundary_Helper(K,f,idx,dis[axis]);}}
+}
+
+template<int d> void SoftBodyLinearFemGrid<d>::Update_K_And_f(const Meso::Field<real, d>& multiplier)
+{
+	////Update K
+	int color_n = ColorGrid<d>::Number_Of_Colors();
+	for (int c = 0; c < color_n; c++) {
+#pragma omp parallel for
+		for (int i = colored_cell_ptr[c]; i < colored_cell_ptr[c + 1]; i++) {
+			VectorDi cell = grid.Cell_Coord(colored_cell_indices[i]); int mat_id = material_id(cell);
+			ArrayF2P<VectorDi, d> cell_nodes; grid.Cell_Incident_Nodes(cell, cell_nodes);
+			Array<int> cell_node_indices(Grid<d>::Number_Of_Cell_Incident_Nodes(), 0);
+			for (int j = 0; j < cell_node_indices.size(); j++)cell_node_indices[j] = Node_Index_In_K(cell_nodes[j]);
+			LinearFemFunc::Add_Cell_Stiffness_Matrix<d>(K, multiplier(cell)*Ke[mat_id], cell_node_indices);
+		}
+	}
+
+	////Update rhs
+	f.fill((real)0);
+	for (auto& b : bc.forces) {
+		VectorDi node = b.first; VectorD force = b.second;
+		for (int axis = 0; axis < d; axis++) { int idx = Node_Index_In_K(node) * d + axis; f[idx] += force[axis]; }
+	}
+
+	////Update bc
+	for (auto& b : bc.psi_D_values) {
+		VectorDi node = b.first; VectorD dis = b.second;
+		for (int axis = 0; axis < d; axis++) {
+			int idx = Node_Index_In_K(node) * d + axis;
+			LinearFemFunc::Set_Dirichlet_Boundary_Helper(K, f, idx, dis[axis]);
+		}
+	}
 }
 
 template<int d> void SoftBodyLinearFemGrid<d>::Solve()
@@ -151,14 +188,12 @@ template<int d> void SoftBodyLinearFemGrid<d>::Compute_Strain(Meso::Matrix<real,
 template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(/*rst*/VectorX& stress,const VectorDi& cell,const MatrixX& E) const
 {
 	VectorX strain_vec;Compute_Strain(strain_vec,cell);stress=E*strain_vec;
-	if(variable_coef)stress*=(*variable_coef)(cell);
 }
 
 template<int d> void SoftBodyLinearFemGrid<d>::Compute_Stress(/*rst*/Meso::Matrix<real, d, d, Eigen::ColMajor>& stress,const VectorDi& cell,const MatrixX& E) const
 {
 	VectorX stress_vec;Compute_Stress(stress_vec,cell,E);
 	LinearFemFunc::Symmetric_Tensor_Vector_To_Matrix<d>(stress_vec,stress);
-	if(variable_coef)stress*=(*variable_coef)(cell);
 }
 
 ////helper functions
@@ -205,18 +240,17 @@ template<int d> void SoftBodyLinearFemGrid<d>::Compute_Elastic_Compliance(Field<
 			energy(cell)=cell_u.dot(K0*cell_u);}	////no multiplying rho
 }
 
-template<int d> void SoftBodyLinearFemGrid<d>::Compute_Elastic_Energy(Field<real, d>& energy) const
+template<int d> void SoftBodyLinearFemGrid<d>::Compute_Elastic_Energy(Meso::Field<real, d>& energy) const
 {
-	energy.Resize(grid.cell_counts, (real)0);
-	int cell_n = grid.Number_Of_Cells();
-	#pragma omp parallel for
-	for (int i = 0; i < cell_n; i++) {
-		VectorDi cell = grid.Cell_Coord(i);
-		int mat_id = material_id(cell); if (mat_id == -1)continue;
-		VectorX cell_u; Compute_Cell_Displacement(u, cell, cell_u);
-		const MatrixX& K0 = Ke[mat_id];
-		energy(cell) = cell_u.dot(K0*cell_u);
-		if (variable_coef) { energy(cell) *= (*variable_coef)(cell);}}	////multiplying rho
+	Meso::Grid<d> cell_grid = energy.grid.Cell_Grid();
+	cell_grid.Exec_Nodes(
+		[&](const VectorDi cell) {
+			int mat_id = material_id(cell); if (mat_id == -1)return;
+			VectorX cell_u; Compute_Cell_Displacement(u,cell, cell_u);
+			const MatrixX& K0 = Ke[mat_id];
+			energy(cell) = (real)0.5 * cell_u.dot(K0 * cell_u);
+		}
+	);
 }
 
 template class SoftBodyLinearFemGrid<2>;

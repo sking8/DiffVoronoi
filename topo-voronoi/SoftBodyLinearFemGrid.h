@@ -12,6 +12,7 @@
 #include "GmgPcgSolverCPU.h"
 #include "Simulator.h"
 #include "IOHelper.h"
+#include "Field.h"
 #ifdef USE_CUDA
 #include "GmgPcgSolverGPU.h"
 #endif
@@ -27,7 +28,6 @@ public:
 	Array<MatrixX> E;
 	Array<MatrixX> Ke;
 	Field<short,d> material_id;
-	Field<real,d>* variable_coef=nullptr;
 	BoundaryConditionGrid<d> bc;
 	
 	////multigrid and parallelization
@@ -43,9 +43,10 @@ public:
 	
 	//SoftBodyLinearFemGrid();
 
-	virtual void Initialize(const Grid<d> _grid);
+	virtual void Initialize(const Grid<d> _grid, const BoundaryConditionGrid<d>& _bc, const Array<std::tuple<real, real>>& _materials, const Field<short, d>& _material_id);
 	void Allocate_K();
 	virtual void Update_K_And_f();
+	virtual void Update_K_And_f(const Meso::Field<real, d>& multiplier);
 	virtual void Solve();
 
 	virtual void Output(Meso::DriverMetaData& metadata) {
@@ -60,15 +61,14 @@ public:
 				else if constexpr (d == 3) return Vector3(u[idx * 3], u[idx * 3 + 1], u[idx * 3 + 2]);
 			}
 		);
-
-		std::ofstream myfile;
+		Meso::VTKFunc::Write_Vector_Field(meso_u, vtk_path.string());
+		/*std::ofstream myfile;
 		myfile.open("64_32_cb.txt");
 		myfile << u;
-		myfile.close();
+		myfile.close();*/
 	}
 
-	void Add_Material(real youngs,real poisson);
-	//void Add_Material(MatrixX E);
+	void Add_Material(const std::tuple<real, real> material);
 	void Clear_Materials(){Ke.clear();}
 
 	virtual void Set_Fixed(const VectorDi& node);
@@ -85,8 +85,8 @@ public:
 	void Compute_Stress(VectorX& stress,const VectorDi& cell,const MatrixX& E) const;
 	void Compute_Stress(Meso::Matrix<real, d, d, Eigen::ColMajor>& stress,const VectorDi& cell,const MatrixX& E) const;
 
-	virtual void Compute_Elastic_Compliance(Field<real, d>& energy);	////not multiplying rho
-	virtual void Compute_Elastic_Energy(Field<real, d>& energy) const;			////multiplying rho		
+	virtual void Compute_Elastic_Compliance(Field<real, d>& energy);			////multiplying rho
+	virtual void Compute_Elastic_Energy(Meso::Field<real, d>& energy) const;			////not multiplying rho
 
 protected:
 	int Node_Index_In_K(const VectorDi& node) const;
