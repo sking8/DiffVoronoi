@@ -53,13 +53,14 @@ public:
 	}
 
 	virtual void Output(Meso::OptimizerDriverMetaData& meta_data) {
-		/*if(meta_data.iter_count==0){
-			Meso::VTKFunc::Write_Boundary_Condition(linear_fem_grid.bc,grid, meta_data.base_path);
+		if(meta_data.iter_count==0){
+			//Meso::VTKFunc::Write_Boundary_Condition(linear_fem_grid.bc,grid, meta_data.base_path);
 			meta_data.data_output << "iter,obj,frac,\n";
 		}
 		else {
+			Info("obj:{}", obj);
 			meta_data.data_output << meta_data.iter_count << "," << obj << "," << vol_frac << ",\n";
-		}*/
+		}
 
 		std::string vts_name = fmt::format("vts{:04d}.vts", meta_data.iter_count);
 		Meso::bf::path vtk_path = meta_data.base_path / Meso::bf::path(vts_name);
@@ -109,7 +110,7 @@ public:
 
 	//================== Essential MMA Functions================================
 	void Compute_Objective() { //temporary objective is the sum of all rho
-		grid.Exec_Nodes(
+		/*grid.Exec_Nodes(
 			[&](const VectorDi node) {
 				fem_variable_coef(node) = pow(rho(node), power);
 			}
@@ -119,7 +120,16 @@ public:
 		linear_fem_grid.Solve();
 		linear_fem_grid.Compute_Elastic_Energy(energy_f);
 		Meso::ArrayFunc::Multiply(energy_f.Data(), fem_variable_coef.Data());
-		obj = Meso::ArrayFunc::Sum(energy_f.Data());
+		obj = Meso::ArrayFunc::Sum(energy_f.Data());*/
+
+		real obj = 0;
+		grid.Iterate_Nodes(
+			[&](const VectorDi node) {
+				if (grid.Index(node) % 2 == 0) { obj += rho(node); }
+				//else{ obj += ((real)1-rho(node)); }
+			}
+		);
+		Info("obj:{}", obj);
 	}
 
 	void Sync_Var_Opt_To_Fem() {
@@ -133,12 +143,19 @@ public:
 
 	////var -> dobj_drho
 	void Compute_Gradient() {
-		linear_fem_grid.Compute_Elastic_Energy(energy_f); //may not calculate twice
+		//linear_fem_grid.Compute_Elastic_Energy(energy_f); //may not calculate twice
 
-		grid.Iterate_Nodes(
+		//grid.Iterate_Nodes(
+		//	[&](const VectorDi node) {
+		//		int idx = grid.Index(node);
+		//		grad[idx] = -power * (pow(rho(node), power - (real)1)) * energy_f(node);
+		//	}
+		//);
+		grid.Exec_Nodes(
 			[&](const VectorDi node) {
 				int idx = grid.Index(node);
-				grad[idx] = -power * (pow(rho(node), power - (real)1)) * energy_f(node);
+				if (idx % 2 == 0) { grad[idx] = (real)1; }
+				else { grad[idx]= (real) - 1; }
 			}
 		);
 	}
@@ -146,6 +163,7 @@ public:
 	//volume constraints
 	void Compute_Constraint() {
 		real sum = Meso::ArrayFunc::Sum(rho.Data());
+		Info("Sum:{}", sum);
 		vol_frac = sum / (real)var.size();
 		constraint = vol_frac - target_frac;
 	}
@@ -161,7 +179,6 @@ public:
 		Meso::ArrayFunc::Add_Scalar(var_low_bounds, -mov_lim);
 		Meso::ArrayFunc::Unary_Transform(var_up_bounds, [=](const real a) {return std::min(a, rho_max); }, var_up_bounds);
 		Meso::ArrayFunc::Unary_Transform(var_low_bounds, [=](const real a) {return std::max(a, rho_min); }, var_low_bounds);
-
 	}
 
 	////relaxed heaviside projection

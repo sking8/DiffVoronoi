@@ -13,7 +13,7 @@ public:
 		int power = Meso::Json::Value(j, "power", 3);
 		real dx = 1.0 / scale;
 		VectorDi grid_size = scale * VectorDi::Ones();
-		grid_size[1] /= 2;
+		//grid_size[1] /= 2;
 		Meso::Grid<d> grid(grid_size, dx, VectorD::Zero(), Meso::CENTER);
 		Meso::Info("Grid:{}", grid);
 		Meso::Grid<d> corner_grid(grid_size + VectorDi::Ones(), dx, VectorD::Zero(), Meso::CORNER);
