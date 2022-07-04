@@ -243,8 +243,8 @@ template<int d> void SoftBodyLinearFemGrid<d>::Compute_Elastic_Compliance(Field<
 
 template<int d> void SoftBodyLinearFemGrid<d>::Compute_Elastic_Energy(Meso::Field<real, d>& energy) const
 {
-	Meso::Grid<d> cell_grid = energy.grid.Cell_Grid();
-	cell_grid.Exec_Nodes(
+	Meso::Grid<d> grid = energy.grid;
+	grid.Exec_Nodes(
 		[&](const VectorDi cell) {
 			int mat_id = material_id(cell); if (mat_id == -1)return;
 			VectorX cell_u; Compute_Cell_Displacement(u,cell, cell_u);

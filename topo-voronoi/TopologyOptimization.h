@@ -28,19 +28,20 @@ public:
 
 	////SIMP parameters
 	Meso::Field<real, d>	fem_variable_coef;				//rho^p, the multiplier in front of Young's modulus
-	Field<real, d>			spx_fem_variable_coef;
 	Meso::Field<real, d>	energy_f;
-	int power;										//penalizing power
+	int power;												//penalizing power
 	real target_frac;
-	real mov_lim;									//move limit for each iteration, can be tuned 
-	real rho_min = (real)0;							//the rho_min corresponds to minimum young's modulus = young's modulus * rho_min, optimized rho ranges from [0,1]
+	real mov_lim;											//move limit for each iteration, can be tuned 
+	real rho_min = (real)1e-3;							//the rho_min corresponds to minimum young's modulus = young's modulus * rho_min, optimized rho ranges from [0,1]
 	real rho_max = (real)1;
 	real beta = 1;									//how sharp the filter is
 	real vol_frac;									//current volume fraction
 
 	virtual void Optimize(Meso::OptimizerDriverMetaData & meta_data) {
+		Sync_Var_Opt_To_Fem();
 		Compute_Objective();
 		Compute_Gradient();
+		//Numerical_Derivative_DObj_DRho();
 		Compute_Constraint();
 		Compute_Constraint_Grad();
 		Compute_Bounds();
@@ -102,17 +103,15 @@ public:
 		constraint_grads.resize(cell_num);
 		fem_variable_coef.Init(grid, (real)0);
 		rho.Init(grid,(real)_target_frac);						//padding cells also have _target_frac
-		energy_f.Init(grid, (real)0);
+		energy_f.Init(grid,(real)0);
 		mma_solver = std::make_shared<MMASolver>(cell_num, 1);	//one constraint
 	}
 
 	//================== Essential MMA Functions================================
 	void Compute_Objective() { //temporary objective is the sum of all rho
-		Sync_Var_Opt_To_Fem();
-
 		grid.Exec_Nodes(
 			[&](const VectorDi node) {
-				fem_variable_coef(node) = pow(rho(node), power) * ((real)1 - (real)1e-9) + (real)1e-9;
+				fem_variable_coef(node) = pow(rho(node), power);
 			}
 		);
 
@@ -123,22 +122,11 @@ public:
 		obj = Meso::ArrayFunc::Sum(energy_f.Data());
 	}
 
-	void Sync_Fem_To_Var_Opt() {
-		int counter = 0;
-		grid.Iterate_Nodes(
-			[&](const VectorDi node) {
-				var[counter] = rho(node);
-				counter++;
-			}
-		);
-	}
-
 	void Sync_Var_Opt_To_Fem() {
-		int counter = 0;
 		grid.Iterate_Nodes(
 			[&](const VectorDi node) {
-				rho(node)= var[counter];
-				counter++;
+				int idx = grid.Index(node);
+				rho(node)= var[idx];
 			}
 		);
 	}
@@ -147,11 +135,10 @@ public:
 	void Compute_Gradient() {
 		linear_fem_grid.Compute_Elastic_Energy(energy_f); //may not calculate twice
 
-		int counter = 0;
 		grid.Iterate_Nodes(
 			[&](const VectorDi node) {
-				grad[counter] = -power * (pow(rho(node), power - (real)1)) * ((real)1 - (real)1e-9) * energy_f(node);
-				counter++;
+				int idx = grid.Index(node);
+				grad[idx] = -power * (pow(rho(node), power - (real)1)) * energy_f(node);
 			}
 		);
 	}
@@ -168,12 +155,13 @@ public:
 	}
 
 	void Compute_Bounds() {
-		var_up_bounds =var;
+		var_up_bounds = var;
 		var_low_bounds = var;
 		Meso::ArrayFunc::Add_Scalar(var_up_bounds, mov_lim);
 		Meso::ArrayFunc::Add_Scalar(var_low_bounds, -mov_lim);
 		Meso::ArrayFunc::Unary_Transform(var_up_bounds, [=](const real a) {return std::min(a, rho_max); }, var_up_bounds);
 		Meso::ArrayFunc::Unary_Transform(var_low_bounds, [=](const real a) {return std::max(a, rho_min); }, var_low_bounds);
+
 	}
 
 	////relaxed heaviside projection
@@ -186,36 +174,29 @@ public:
 
 	void Numerical_Derivative_DObj_DRho()
 	{
-		//real delta_x = (real)1e-6;
-		//int p_size = particles.Size();
+		real delta_rho = (real)1e-3;
 
-		//std::cout << "Numerical DRho_DX" << std::endl;
-		//Update_DRho_DX();
-		//Field<real, d> rho_test = rho;
-		//Field<Array<VectorD>, d> numeric_derv(grid);
+		Info("Numerical DObj_DRho");
+		Array<real> numerical_dobj_drho(grid.Counts().prod(),(real)0);
 
 		////should not parallelize here
-		//grid.Iterate_Nodes(
-		//	[&](const VectorDi cell) {
-		//		int nb_c_n = nbs_c(cell).size();
-		//		numeric_derv(cell).resize(nb_c_n);
-		//		for (int j = 0; j < nb_c_n; j++) {
-		//			int nb_p = nbs_c(cell)[j];
-		//			VectorD old_pos = particles.x(nb_p);
-		//			for (int k = 0; k < d; k++) { //iterate through dimensions
-		//				particles.x(nb_p)[k] += delta_x;
-		//				Update_Softmax_Sum();
-		//				Update_Rho();
-		//				numeric_derv(cell)[j][k] = (rho(cell) - rho_test(cell)) / delta_x;
-		//				particles.x(nb_p)[k] = old_pos[k];
-		//			}
-		//			if (!Meso::MathFunc::All_Close(numeric_derv(cell)[j], drho_dx(cell)[j], (real)1e-2, (real)1e-3)) {
-		//				Warn("cell:{}, nb:{}, analytical:{}, numerical:{}", cell, j, drho_dx(cell)[j], numeric_derv(cell)[j]);
-		//			}
-		//		}
-		//	}
-		//);
+		int counter = 0;
+		grid.Iterate_Nodes(
+			[&](const VectorDi cell) {
+				real old_rho = rho(cell);
+				real old_obj = obj;
+				rho(cell) += delta_rho;
+				Compute_Objective();
+				real new_obj = obj;
+				numerical_dobj_drho[counter] = (new_obj - old_obj)/delta_rho;
+				rho(cell) = old_rho;
+				if (!Meso::MathFunc::Close(numerical_dobj_drho[counter], grad[counter], (real)1e-4, (real)1e-3)) {
+					Meso::Warn("cell:{}, analytical:{}, numerical:{}", cell, grad[counter], numerical_dobj_drho[counter]);
+				}
+				counter++;
+			}
+		);
 
-		//Pass("Finished test of dobj drho");
+		Meso::Pass("Finished test of dobj drho");
 	}
 };
