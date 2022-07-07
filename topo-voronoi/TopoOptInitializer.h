@@ -10,10 +10,11 @@ public:
 		real strength = Meso::Json::Value(j, "strength", (real)1);
 		real target_frac = Meso::Json::Value(j, "target_frac", (real)0.35);
 		real mov_lim = Meso::Json::Value(j, "mov_lim", (real)0.05);
+		real filter_r = Meso::Json::Value(j, "filter_r", (real)1);
 		int power = Meso::Json::Value(j, "power", 3);
 		real dx = 1.0 / scale;
 		VectorDi grid_size = scale * VectorDi::Ones();
-		//grid_size[1] /= 2;
+		grid_size[1] /= 2;
 		Meso::Grid<d> grid(grid_size, dx, VectorD::Zero(), Meso::CENTER);
 		Meso::Info("Grid:{}", grid);
 		Meso::Grid<d> corner_grid(grid_size + VectorDi::Ones(), dx, VectorD::Zero(), Meso::CORNER);
@@ -37,6 +38,6 @@ public:
 		Field<short, d> material_id(spx_grid.cell_counts, 0);
 		SoftBodyLinearFemGrid<d> linear_fem_grid;
 		linear_fem_grid.Initialize(spx_grid, spx_bc, materials, material_id);
-		optimizer.Init(linear_fem_grid, grid, target_frac, mov_lim, power);
+		optimizer.Init(linear_fem_grid, grid, target_frac, mov_lim, power, filter_r);
 	}
 };

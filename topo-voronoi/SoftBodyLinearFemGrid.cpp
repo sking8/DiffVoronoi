@@ -73,6 +73,11 @@ template<int d> void SoftBodyLinearFemGrid<d>::Update_K_And_f()
 
 template<int d> void SoftBodyLinearFemGrid<d>::Update_K_And_f(const Meso::Field<real, d>& multiplier)
 {
+	//reset variables before update
+	u.setZero();
+	f.setZero();
+	SparseFunc::Set_Value(K, (real)0);
+
 	////Update K
 	int color_n = ColorGrid<d>::Number_Of_Colors();
 	for (int c = 0; c < color_n; c++) {

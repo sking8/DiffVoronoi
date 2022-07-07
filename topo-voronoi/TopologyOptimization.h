@@ -1,3 +1,8 @@
+//////////////////////////////////////////////////////////////////////////
+// Topology Optimization (SIMP with threshold projection)
+// Copyright (c) (2022-), Fan Feng
+// This file is part of SimpleX, whose distribution is governed by the LICENSE file.
+//////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "Grid.h"
 #include "Field.h"
@@ -7,6 +12,7 @@
 #include <mma/MMASolver.h>
 #include "SoftBodyLinearFemGrid.h"
 #include <thrust/functional.h>
+#include "stencil.h"
 
 template<int d> class TopologyOptimization : public Meso::Optimizer {
 	Typedef_VectorD(d);
@@ -30,12 +36,13 @@ public:
 	Meso::Field<real, d>	fem_variable_coef;				//rho^p, the multiplier in front of Young's modulus
 	Meso::Field<real, d>	energy_f;
 	int power;												//penalizing power
+	real filter_r;											//filter size r
 	real target_frac;
 	real mov_lim;											//move limit for each iteration, can be tuned 
-	real rho_min = (real)1e-3;							//the rho_min corresponds to minimum young's modulus = young's modulus * rho_min, optimized rho ranges from [0,1]
+	real rho_min = (real)1e-3;								//the rho_min corresponds to minimum young's modulus = young's modulus * rho_min, optimized rho ranges from [0,1]
 	real rho_max = (real)1;
-	real beta = 1;									//how sharp the filter is
-	real vol_frac;									//current volume fraction
+	real beta = 1;											//how sharp the filter is
+	real vol_frac;											//current volume fraction
 
 	virtual void Optimize(Meso::OptimizerDriverMetaData & meta_data) {
 		Sync_Var_Opt_To_Fem();
@@ -47,7 +54,6 @@ public:
 		Compute_Bounds();
 		intmed_var = var;							//record the intermediate variables before update
 
-		Assert(std::is_same<real, double>::value, "only double data type is supported by the mma solver");
 		mma_solver->Update(Meso::ArrayFunc::Data(var), Meso::ArrayFunc::Data(grad),
 			&constraint, Meso::ArrayFunc::Data(constraint_grads), Meso::ArrayFunc::Data(var_low_bounds), Meso::ArrayFunc::Data(var_up_bounds));
 	}
@@ -58,7 +64,6 @@ public:
 			meta_data.data_output << "iter,obj,frac,\n";
 		}
 		else {
-			Info("obj:{}", obj);
 			meta_data.data_output << meta_data.iter_count << "," << obj << "," << vol_frac << ",\n";
 		}
 
@@ -89,12 +94,13 @@ public:
 		return false;
 	}
 
-	void Init(const SoftBodyLinearFemGrid<d>& _linear_fem_grid, Meso::Grid<d> _grid, real _target_frac,real _mov_lim,int _power) {
+	void Init(const SoftBodyLinearFemGrid<d>& _linear_fem_grid, Meso::Grid<d> _grid, real _target_frac,real _mov_lim,int _power,real _filter_r) {
 		linear_fem_grid = _linear_fem_grid;
 		grid = _grid;
 		target_frac = _target_frac;
 		mov_lim = _mov_lim;
 		power = _power;
+		filter_r = _filter_r;
 		int cell_num = grid.Counts().prod();
 		var.resize(cell_num,(real)_target_frac);
 		intmed_var.resize(cell_num,(real)0);
@@ -105,57 +111,42 @@ public:
 		fem_variable_coef.Init(grid, (real)0);
 		rho.Init(grid,(real)_target_frac);						//padding cells also have _target_frac
 		energy_f.Init(grid,(real)0);
+		Assert(std::is_same<real, double>::value, "only double data type is supported by the mma solver");
 		mma_solver = std::make_shared<MMASolver>(cell_num, 1);	//one constraint
 	}
 
 	//================== Essential MMA Functions================================
 	void Compute_Objective() { //temporary objective is the sum of all rho
-		/*grid.Exec_Nodes(
-			[&](const VectorDi node) {
-				fem_variable_coef(node) = pow(rho(node), power);
+		grid.Exec_Nodes(
+			[&](const VectorDi cell) {
+				fem_variable_coef(cell) = pow(rho(cell), (real)power);
 			}
 		);
 
 		linear_fem_grid.Update_K_And_f(fem_variable_coef);
 		linear_fem_grid.Solve();
 		linear_fem_grid.Compute_Elastic_Energy(energy_f);
-		Meso::ArrayFunc::Multiply(energy_f.Data(), fem_variable_coef.Data());
-		obj = Meso::ArrayFunc::Sum(energy_f.Data());*/
-
-		real obj = 0;
-		grid.Iterate_Nodes(
-			[&](const VectorDi node) {
-				if (grid.Index(node) % 2 == 0) { obj += rho(node); }
-				//else{ obj += ((real)1-rho(node)); }
-			}
-		);
-		Info("obj:{}", obj);
+		Meso::ArrayFunc::Multiply(fem_variable_coef.Data(), energy_f.Data());
+		obj = Meso::ArrayFunc::Sum(fem_variable_coef.Data());
 	}
 
 	void Sync_Var_Opt_To_Fem() {
-		grid.Iterate_Nodes(
-			[&](const VectorDi node) {
-				int idx = grid.Index(node);
-				rho(node)= var[idx];
+		grid.Exec_Nodes(
+			[&](const VectorDi cell) {
+				int idx = grid.Index(cell);
+				rho(cell)= var[idx];
 			}
 		);
+
+		rho=Meso::Convolution_Filter<real,d>(filter_r*grid.dx,rho);
 	}
 
 	////var -> dobj_drho
 	void Compute_Gradient() {
-		//linear_fem_grid.Compute_Elastic_Energy(energy_f); //may not calculate twice
-
-		//grid.Iterate_Nodes(
-		//	[&](const VectorDi node) {
-		//		int idx = grid.Index(node);
-		//		grad[idx] = -power * (pow(rho(node), power - (real)1)) * energy_f(node);
-		//	}
-		//);
 		grid.Exec_Nodes(
-			[&](const VectorDi node) {
-				int idx = grid.Index(node);
-				if (idx % 2 == 0) { grad[idx] = (real)1; }
-				else { grad[idx]= (real) - 1; }
+			[&](const VectorDi cell) {
+				int idx = grid.Index(cell);
+				grad[idx] = -(real)power * (pow(rho(cell), (real)power - (real)1)) * energy_f(cell);
 			}
 		);
 	}
@@ -163,7 +154,6 @@ public:
 	//volume constraints
 	void Compute_Constraint() {
 		real sum = Meso::ArrayFunc::Sum(rho.Data());
-		Info("Sum:{}", sum);
 		vol_frac = sum / (real)var.size();
 		constraint = vol_frac - target_frac;
 	}
@@ -185,32 +175,31 @@ public:
 	real Hat(const real x) const {
 		return (tanh(beta / (real)2) + tanh(beta * (x - (real)0.5))) / tanh(beta / (real)2) / (real)2;
 	}
+
 	real Hat_Grad(const real x) const {
 		return beta * ((real)1 - pow(tanh(beta * (x - (real)0.5)), 2)) / tanh(beta / (real)2) / (real)2;
 	}
 
 	void Numerical_Derivative_DObj_DRho()
 	{
-		real delta_rho = (real)1e-3;
-
 		Info("Numerical DObj_DRho");
+		real delta_rho = (real)1e-5;
 		Array<real> numerical_dobj_drho(grid.Counts().prod(),(real)0);
+		real old_obj = obj;
 
 		////should not parallelize here
-		int counter = 0;
 		grid.Iterate_Nodes(
 			[&](const VectorDi cell) {
-				real old_rho = rho(cell);
-				real old_obj = obj;
+				int idx = grid.Index(cell);
+				real old_rho = rho(cell);				
 				rho(cell) += delta_rho;
 				Compute_Objective();
 				real new_obj = obj;
-				numerical_dobj_drho[counter] = (new_obj - old_obj)/delta_rho;
+				numerical_dobj_drho[idx] = (new_obj - old_obj)/delta_rho;
 				rho(cell) = old_rho;
-				if (!Meso::MathFunc::Close(numerical_dobj_drho[counter], grad[counter], (real)1e-4, (real)1e-3)) {
-					Meso::Warn("cell:{}, analytical:{}, numerical:{}", cell, grad[counter], numerical_dobj_drho[counter]);
+				if (!Meso::MathFunc::Close(numerical_dobj_drho[idx], grad[idx], (real)1e-4, (real)1e-3)) {
+					Meso::Warn("cell:{}, analytical:{}, numerical:{}", cell, grad[idx], numerical_dobj_drho[idx]);
 				}
-				counter++;
 			}
 		);
 
