@@ -1,23 +1,26 @@
 #pragma once
-#include "TopologyOptimization.h"
+#include "TopoOptVoronoi.h"
 
-template<int d> class TopoOptInitializer {
+template<int d> class TopoOptVoronoiInitializer {
 	Typedef_VectorD(d);
 public:
-	void Apply(json& j, TopologyOptimization<d>& optimizer)
+	void Apply(json& j, TopoOptVoronoi<d>& optimizer)
 	{
 		std::string test = Meso::Json::Value(j, "test", std::string("cantilever_beam"));
 		if (test == "cantilever_beam") Init_Cantilever_Beam(j, optimizer);
 		else Assert(false, "test {} not exist", test);
 	}
 
-	void Init_Cantilever_Beam(json& j, TopologyOptimization<d>& optimizer) {
+	void Init_Cantilever_Beam(json& j, TopoOptVoronoi<d>& optimizer) {
 		int scale = Meso::Json::Value(j, "scale", 32);
 		real strength = Meso::Json::Value(j, "strength", (real)1);
 		real target_frac = Meso::Json::Value(j, "target_frac", (real)0.35);
 		real mov_lim = Meso::Json::Value(j, "mov_lim", (real)0.05);
-		real filter_r = Meso::Json::Value(j, "filter_r", (real)1);
-		int power = Meso::Json::Value(j, "power", 3);
+		int power = Meso::Json::Value(j, "power", 1);
+		int point_num = Meso::Json::Value(j, "point_num", 20);
+		int alpha = Meso::Json::Value(j, "alpha", 100);
+		int beta = Meso::Json::Value(j, "beta", 50);
+		int c = Meso::Json::Value(j, "c", 1);	//controls the dimension of the voronoi junction
 		real dx = 1.0 / scale;
 		VectorDi grid_size = scale * VectorDi::Ones();
 		grid_size[1] /= 2;
@@ -25,7 +28,7 @@ public:
 		Meso::Info("Grid:{}", grid);
 		Meso::Grid<d> corner_grid(grid_size + VectorDi::Ones(), dx, VectorD::Zero(), Meso::CORNER);
 		Meso::Info("Corner Grid:{}", corner_grid);
-		//only one case now, cantilever beam
+
 		BoundaryConditionGrid<d> spx_bc;
 		corner_grid.Iterate_Nodes(
 			[&](const VectorDi node) {
@@ -37,6 +40,12 @@ public:
 			}
 		);
 
+		Meso::Array<VectorD> points(point_num);
+		for (int i = 0; i < points.size(); i++) {
+			points[i] = Meso::Random::Uniform_In_Box(grid.Domain_Min(Meso::CENTER), grid.Domain_Max(Meso::CENTER));
+			Meso::Info("point {}: {}", i, points[i]);
+		}
+
 		Grid<d> spx_grid(grid_size, dx, VectorD::Zero());
 
 		Array<std::tuple<real, real>> materials;
@@ -44,6 +53,8 @@ public:
 		Field<short, d> material_id(spx_grid.cell_counts, 0);
 		SoftBodyLinearFemGrid<d> linear_fem_grid;
 		linear_fem_grid.Initialize(spx_grid, spx_bc, materials, material_id);
-		optimizer.Init(linear_fem_grid, grid, target_frac, mov_lim, power, filter_r);
+		Meso::VoronoiField<d> voronoi_field;
+		voronoi_field.Initialize(grid, points, point_num, beta, alpha, c);
+		optimizer.Init(linear_fem_grid, voronoi_field, target_frac, mov_lim, power);
 	}
 };

@@ -1,6 +1,7 @@
 //////////////////////////////////////////////////////////////////////////
-// Topology Optimization (SIMP with MMA)
+// Topology Optimization with Voronoi Structure
 // Copyright (c) (2022-), Fan Feng
+// This file is part of SimpleX, whose distribution is governed by the LICENSE file.
 //////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "Grid.h"
@@ -12,13 +13,14 @@
 #include "SoftBodyLinearFemGrid.h"
 #include <thrust/functional.h>
 #include "stencil.h"
+#include "VoronoiField.h"
 
-template<int d> class TopologyOptimization : public Meso::Optimizer {
+template<int d> class TopoOptVoronoi : public Meso::Optimizer {
 	Typedef_VectorD(d);
 public:
 	std::shared_ptr<MMASolver>			mma_solver;			//mathematical optimizer
 	SoftBodyLinearFemGrid<d>			linear_fem_grid;	//simulator
-
+	Meso::VoronoiField<d>				voronoi_field;
 	//general optimizer variables
 	Meso::Array<real>		var;							//variables
 	Meso::Array<real>		intmed_var;						//intermediate variables
@@ -35,15 +37,14 @@ public:
 	Meso::Field<real, d>	fem_variable_coef;				//rho^p, the multiplier in front of Young's modulus
 	Meso::Field<real, d>	energy_f;
 	int power;												//penalizing power
-	real filter_r;											//filter size r
 	real target_frac;
 	real mov_lim;											//move limit for each iteration, can be tuned 
-	real rho_min = (real)1e-3;								//the rho_min corresponds to minimum young's modulus = young's modulus * rho_min, optimized rho ranges from [0,1]
-	real rho_max = (real)1;
+	real pos_min;											//minimum pos component
+	real pos_max;											//maximum pos component
 	real beta = 1;											//how sharp the filter is
 	real vol_frac;											//current volume fraction
 
-	virtual void Optimize(Meso::OptimizerDriverMetaData & meta_data) {
+	virtual void Optimize(Meso::OptimizerDriverMetaData& meta_data) {
 		Sync_Var_Opt_To_Fem();
 		Compute_Objective();
 		Compute_Gradient();
@@ -58,7 +59,7 @@ public:
 	}
 
 	virtual void Output(Meso::OptimizerDriverMetaData& meta_data) {
-		if(meta_data.iter_count==0){
+		if (meta_data.iter_count == 0) {
 			//Meso::VTKFunc::Write_Boundary_Condition(linear_fem_grid.bc,grid, meta_data.base_path);
 			meta_data.data_output << "iter,obj,frac,\n";
 		}
@@ -69,7 +70,7 @@ public:
 		std::string vts_name = fmt::format("vts{:04d}.vts", meta_data.iter_count);
 		Meso::bf::path vtk_path = meta_data.base_path / Meso::bf::path(vts_name);
 		Meso::VTKFunc::Write_VTS(rho, vtk_path.string());
-		
+
 		Grid<d> spx_grid(grid.Counts(), grid.dx, grid.Domain_Min(Meso::CENTER));
 		Meso::Field<VectorD, d> meso_u(grid);
 		meso_u.Calc_Nodes(
@@ -93,32 +94,35 @@ public:
 		return false;
 	}
 
-	void Init(const SoftBodyLinearFemGrid<d>& _linear_fem_grid, Meso::Grid<d> _grid, real _target_frac,real _mov_lim,int _power,real _filter_r) {
+	void Init(const SoftBodyLinearFemGrid<d>& _linear_fem_grid,const Meso::VoronoiField<d>& _voronoi_field, real _target_frac, real _mov_lim, int _power) {
 		linear_fem_grid = _linear_fem_grid;
-		grid = _grid;
+		voronoi_field = _voronoi_field;
+		grid = _voronoi_field.grid;
 		target_frac = _target_frac;
 		mov_lim = _mov_lim;
+		pos_min = (real)2*grid.Domain_Min(Meso::CENTER)[0] - grid.Domain_Max(Meso::CENTER)[0]; //one more domain space
+		pos_max = (real)2*grid.Domain_Max(Meso::CENTER)[0] - grid.Domain_Min(Meso::CENTER)[0];
 		power = _power;
-		filter_r = _filter_r;
-		int cell_num = grid.Counts().prod();
-		var.resize(cell_num,(real)_target_frac);
-		intmed_var.resize(cell_num,(real)0);
-		grad.resize(cell_num, (real)1);
-		var_up_bounds.resize(cell_num);
-		var_low_bounds.resize(cell_num);
-		constraint_grads.resize(cell_num);
+		int var_num = voronoi_field.particles.Size();
+		var.resize(var_num);
+		intmed_var.resize(var_num, (real)0);
+		grad.resize(var_num, (real)1);
+		var_up_bounds.resize(var_num);
+		var_low_bounds.resize(var_num);
+		constraint_grads.resize(var_num);
 		fem_variable_coef.Init(grid, (real)0);
-		rho.Init(grid,(real)_target_frac);						//padding cells also have _target_frac
-		energy_f.Init(grid,(real)0);
+		rho.Init(grid, (real)_target_frac);						//init as the voronoi rho
+		energy_f.Init(grid, (real)0);
 		Assert(std::is_same<real, double>::value, "only double data type is supported by the mma solver");
-		mma_solver = std::make_shared<MMASolver>(cell_num, 1);	//one constraint
+		mma_solver = std::make_shared<MMASolver>(var_num, 1);	//one constraint
 	}
 
 	//================== Essential MMA Functions================================
 	void Compute_Objective() { //temporary objective is the sum of all rho
+		//update Voronoi points
 		grid.Exec_Nodes(
 			[&](const VectorDi cell) {
-				fem_variable_coef(cell) = pow(rho(cell), (real)power);
+				fem_variable_coef(cell) = pow(voronoi_field.rho(cell), (real)power);
 			}
 		);
 
@@ -133,11 +137,9 @@ public:
 		grid.Exec_Nodes(
 			[&](const VectorDi cell) {
 				int idx = grid.Index(cell);
-				rho(cell)= var[idx];
+				rho(cell) = var[idx];
 			}
 		);
-
-		rho=Meso::Convolution_Filter<real,d>(filter_r*grid.dx,rho);
 	}
 
 	////var -> dobj_drho
@@ -166,26 +168,35 @@ public:
 		var_low_bounds = var;
 		Meso::ArrayFunc::Add_Scalar(var_up_bounds, mov_lim);
 		Meso::ArrayFunc::Add_Scalar(var_low_bounds, -mov_lim);
-		Meso::ArrayFunc::Unary_Transform(var_up_bounds, [=](const real a) {return std::min(a, rho_max); }, var_up_bounds);
-		Meso::ArrayFunc::Unary_Transform(var_low_bounds, [=](const real a) {return std::max(a, rho_min); }, var_low_bounds);
+		Meso::ArrayFunc::Unary_Transform(var_up_bounds, [=](const real a) {return std::min(a, pos_max); }, var_up_bounds);
+		Meso::ArrayFunc::Unary_Transform(var_low_bounds, [=](const real a) {return std::max(a, pos_min); }, var_low_bounds);
+	}
+
+	////relaxed heaviside projection
+	real Hat(const real x) const {
+		return (tanh(beta / (real)2) + tanh(beta * (x - (real)0.5))) / tanh(beta / (real)2) / (real)2;
+	}
+
+	real Hat_Grad(const real x) const {
+		return beta * ((real)1 - pow(tanh(beta * (x - (real)0.5)), 2)) / tanh(beta / (real)2) / (real)2;
 	}
 
 	void Numerical_Derivative_DObj_DRho()
 	{
 		Info("Numerical DObj_DRho");
 		real delta_rho = (real)1e-5;
-		Array<real> numerical_dobj_drho(grid.Counts().prod(),(real)0);
+		Array<real> numerical_dobj_drho(grid.Counts().prod(), (real)0);
 		real old_obj = obj;
 
 		////should not parallelize here
 		grid.Iterate_Nodes(
 			[&](const VectorDi cell) {
 				int idx = grid.Index(cell);
-				real old_rho = rho(cell);				
+				real old_rho = rho(cell);
 				rho(cell) += delta_rho;
 				Compute_Objective();
 				real new_obj = obj;
-				numerical_dobj_drho[idx] = (new_obj - old_obj)/delta_rho;
+				numerical_dobj_drho[idx] = (new_obj - old_obj) / delta_rho;
 				rho(cell) = old_rho;
 				if (!Meso::MathFunc::Close(numerical_dobj_drho[idx], grad[idx], (real)1e-4, (real)1e-3)) {
 					Meso::Warn("cell:{}, analytical:{}, numerical:{}", cell, grad[idx], numerical_dobj_drho[idx]);

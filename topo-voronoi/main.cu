@@ -6,8 +6,8 @@
 #include "OptimizerDriver.h"
 #include "VoronoiField.h"
 #include "VoronoiFieldInitializer.h"
-//#include "LinearFEMGrid.h"
-//#include "LinearFEMGridInitializer.h"
+#include "TopoOptVoronoi.h"
+#include "TopoOptVoronoiInitializer.h"
 
 template<int d>
 void Run_Topology_Optimization(json& j) {
@@ -25,13 +25,13 @@ void Run_Voronoi_Field(json& j) {
 	driver.Run(j, scene, voronoi_field);
 }
 
-//template<int d>
-//void Run_Linear_FEM_Grid(json& j) {
-//	LinearFEMGrid<d> voronoi_field;
-//	LinearFEMGridInitializer<d> scene;
-//	Driver driver;
-//	driver.Run(j, scene, voronoi_field);
-//}
+template<int d>
+void Run_Topo_Opt_Voronoi(json& j) {
+	TopoOptVoronoi<d> optimizer;
+	TopoOptVoronoiInitializer<d> scene;
+	Meso::OptimizerDriver driver;
+	driver.Run(j, scene, optimizer);
+}
 
 int main(int argc, char** argv) {
 	try {
@@ -60,11 +60,11 @@ int main(int argc, char** argv) {
 			else if (dim == 3) { Run_Voronoi_Field<3>(j); }
 			else { Meso::Error("Dimension not supported!"); }
 		}
-		/*else if (app == "linear_fem_grid") {
-			if (dim == 2) { Run_Linear_FEM_Grid<2>(j); }
-			else if (dim == 3) { Run_Linear_FEM_Grid<3>(j); }
-			else { Error("Dimension not supported!"); }
-		}*/
+		else if (app == "topo_opt_voronoi") {
+			if (dim == 2) { Run_Topo_Opt_Voronoi<2>(j); }
+			else if (dim == 3) { Run_Topo_Opt_Voronoi<3>(j); }
+			else { Meso::Error("Dimension not supported!"); }
+		}
 		else {
 			Meso::Error("main: Invalid app");
 		}
