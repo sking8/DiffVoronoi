@@ -32,13 +32,11 @@ namespace Meso{
 
 		////neighbor searching
 		int nb_n;
-		std::shared_ptr<NeighborSearcher<d> > nbs_searcher;         ////radius search
 		Field<Array<int>,d> nbs_c;									////nb particles index for each cell
 		Array<Array<int> > nbs_p;									////nb cells for each particle, Fan: may not be neccesary here
 
 		////derivatives
-		Field<Array<VectorD>,d> drho_dx;								////first index for cell; second index for particle
-		//Field<Array<MatrixD>,d> drho_dD;								////first index for cell; second index for particle
+		Field<Array<VectorD>,d> drho_dx;							////first index for cell; second index for particle
 
 		//////////////////////////////////////////////////////////////////////////
 		////Initialization
@@ -63,10 +61,8 @@ namespace Meso{
 		void Update_Softmax_Sum();							////update s as a precomputed field
 		void Update_Rho();									////update rho on the field
 		void Update_DRho_DX();
-		//void Update_DRho_DD();
 
 		void Numerical_Derivative_DRho_DX();
-		//void Numerical_Derivative_DRho_DD();
 
 	protected:
 		inline real Delta(const int p, const int q)
