@@ -148,6 +148,7 @@ public:
 		linear_fem_grid.Compute_Elastic_Energy(energy_f);
 		Meso::ArrayFunc::Multiply(fem_variable_coef.Data(), energy_f.Data());
 		obj = Meso::ArrayFunc::Sum(fem_variable_coef.Data());
+		Meso::Info("Current objective: {}", obj);
 	}
 
 	void Update_Hat_Rho(Meso::OptimizerDriverMetaData& meta_data) {
@@ -208,6 +209,7 @@ public:
 	void Compute_Constraint() {
 		real sum = Meso::ArrayFunc::Sum(hat_rho.Data());
 		vol_frac = sum / (real)grid.Counts().prod();
+		Meso::Info("Current fraction: {}", vol_frac);
 		constraint = vol_frac - target_frac;
 	}
 

@@ -23,7 +23,7 @@ public:
 		int c = Meso::Json::Value(j, "c", 1);	//controls the dimension of the voronoi junction
 		real dx = 1.0 / scale;
 		VectorDi grid_size = scale * VectorDi::Ones();
-		grid_size[1] /= 2;
+		grid_size[1] /= 2; if constexpr (d == 3) { grid_size[2] /= 2; }
 		Meso::Grid<d> grid(grid_size, dx, VectorD::Zero(), Meso::CENTER);
 		Meso::Info("Grid:{}", grid);
 		Meso::Grid<d> corner_grid(grid_size + VectorDi::Ones(), dx, VectorD::Zero(), Meso::CORNER);
