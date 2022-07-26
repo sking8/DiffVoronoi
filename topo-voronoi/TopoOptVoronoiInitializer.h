@@ -20,6 +20,7 @@ public:
 		int point_num = Meso::Json::Value(j, "point_num", 20);
 		int alpha = Meso::Json::Value(j, "alpha", 100);
 		int beta = Meso::Json::Value(j, "beta", 50);
+		int coarsen_factor = Meso::Json::Value(j, "coarsen_factor", 4);
 		int c = Meso::Json::Value(j, "c", 1);	//controls the dimension of the voronoi junction
 		real dx = 1.0 / scale;
 		VectorDi grid_size = scale * VectorDi::Ones();
@@ -40,11 +41,22 @@ public:
 			}
 		);
 
+		Meso::Grid<d> coarse_grid(Meso::MathFunc::Vi<d>(coarsen_factor,coarsen_factor/2,coarsen_factor/2),1.0/coarsen_factor, VectorD::Zero(), Meso::CENTER);
+		point_num = coarse_grid.Counts().prod();
 		Meso::Array<VectorD> points(point_num);
-		for (int i = 0; i < points.size(); i++) {
+		/*for (int i = 0; i < points.size(); i++) {
 			points[i] = Meso::Random::Uniform_In_Box(grid.Domain_Min(Meso::CENTER), grid.Domain_Max(Meso::CENTER));
 			Meso::Info("point {}: {}", i, points[i]);
-		}
+		}*/
+
+		//regular point positions
+		int counter = 0;
+		coarse_grid.Iterate_Nodes(
+			[&](const VectorDi node) {
+				points[counter] = coarse_grid.Position(node);
+				counter++;
+			}
+		);
 
 		Grid<d> spx_grid(grid_size, dx, VectorD::Zero());
 

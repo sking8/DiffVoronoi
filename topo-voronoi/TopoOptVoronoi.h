@@ -40,8 +40,8 @@ public:
 	int power;												//penalizing power
 	real target_frac;
 	real mov_lim;											//move limit for each iteration, can be tuned
-	real rho_min = 1e-2;									//minimum rho allowed
-	real rho_max = 1;									//maximum rho allowed
+	real rho_min = 1e-3;									//minimum rho allowed
+	real rho_max = 1;										//maximum rho allowed
 	real pos_min;											//minimum pos component
 	real pos_max;											//maximum pos component
 	real beta = 8;											//how sharp the filter is
@@ -239,17 +239,25 @@ public:
 
 	////relaxed heaviside projection
 	real Hat(const real x) const {
-		if (x < 0) { return rho_min; }
-		else if (x > 1) { return rho_max; }
-		real threshol_proj=(tanh(beta / (real)2) + tanh(beta * (x - (real)0.5))) / tanh(beta / (real)2) / (real)2;
-		return rho_min+threshol_proj*(rho_max - rho_min);
-
+		real phi = (real)2 * x - (real)1;
+		if (phi < -1) { return rho_min; }
+		else if (phi > 1) { return rho_max; }
+		else { return (rho_max - rho_min) * Regularized_Heaviside(phi) + rho_min; }
 	}
 
 	real Hat_Grad(const real x) const {
-		if (x < 0 || x > 1 ) { return 0; }
-		real threshol_proj_grad = beta * ((real)1 - pow(tanh(beta * (x - (real)0.5)), 2)) / tanh(beta / (real)2) / (real)2;
-		return threshol_proj_grad * (rho_max - rho_min);
+		real phi = (real)2 * x - (real)1;
+		if (phi < -1) { return 0; }
+		else if (phi > 1) { return 0; }
+		else { return (real)2*(1 - rho_min) * Regularized_Heaviside_Grad(phi); }
+	}
+
+	real Regularized_Heaviside(const real phi) const {
+		return (real)0.5 + (real)15 / (real)16 * phi - (real)5 / (real)8 * pow(phi, 3) + (real)3 / (real)16 * pow(phi, 5);
+	}
+
+	real Regularized_Heaviside_Grad(const real phi) const {
+		return (real)15 / (real)16 * pow(((real)1 - pow(phi, 2)), 2);
 	}
 
 	void Numerical_Derivative_Dobj_Dx()
