@@ -1,0 +1,21 @@
+{
+  "dimension": 2,
+  "thread_num": 16,
+  "app": "topo_opt_voronoi",
+  "optimizer": {
+    "tol": 1e-3,
+    "iter_count": 0,
+    "max_iter_num": 500,
+    "output_base_dir": "tmp_topo_voronoi_2d"
+  },
+  "scene": {
+    "scale": 128,
+    "point_num": 10,
+    "c": 1,
+    "alpha": 150,
+    "beta": 50,
+    "mov_lim": 0.05,
+    "power": 1,
+    "target_frac": 0.3
+  }
+}
