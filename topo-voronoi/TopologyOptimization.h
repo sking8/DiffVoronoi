@@ -67,7 +67,7 @@ public:
 		}
 
 		std::string vts_name = fmt::format("vts{:04d}.vts", meta_data.iter_count);
-		Meso::bf::path vtk_path = meta_data.base_path / Meso::bf::path(vts_name);
+		Meso::fs::path vtk_path = meta_data.base_path / Meso::fs::path(vts_name);
 		Meso::VTKFunc::Write_VTS(rho, vtk_path.string());
 		
 		Grid<d> spx_grid(grid.Counts(), grid.dx, grid.Domain_Min(Meso::CENTER));
@@ -80,14 +80,14 @@ public:
 			}
 		);
 		vts_name = fmt::format("u_vts{:04d}.vts", meta_data.iter_count);
-		vtk_path = meta_data.base_path / Meso::bf::path(vts_name);
+		vtk_path = meta_data.base_path / Meso::fs::path(vts_name);
 		Meso::VTKFunc::Write_Vector_Field(meso_u, vtk_path.string());
 	}
 
 	virtual bool Is_Converged(Meso::OptimizerDriverMetaData& meta_data) {
-		Meso::Array<real> temp = var;
+		Meso::Array<real,Meso::HOST> temp = var;
 		Meso::ArrayFunc::Minus(temp, intmed_var);
-		real change = Meso::ArrayFunc::Max_Abs<real>(temp);
+		real change = Meso::ArrayFunc::Max_Abs<real,Meso::HOST>(temp);
 
 		if (change < meta_data.tol) { Meso::Pass("Converged!"); return true; }
 		return false;
@@ -126,7 +126,7 @@ public:
 		linear_fem_grid.Solve();
 		linear_fem_grid.Compute_Elastic_Energy(energy_f);
 		Meso::ArrayFunc::Multiply(fem_variable_coef.Data(), energy_f.Data());
-		obj = Meso::ArrayFunc::Sum(fem_variable_coef.Data());
+		obj = Meso::ArrayFunc::Sum<real,Meso::HOST>(fem_variable_coef.Data());
 	}
 
 	void Sync_Var_Opt_To_Fem() {
@@ -152,7 +152,7 @@ public:
 
 	//volume constraints
 	void Compute_Constraint() {
-		real sum = Meso::ArrayFunc::Sum(rho.Data());
+		real sum = Meso::ArrayFunc::Sum<real,Meso::HOST>(rho.Data());
 		vol_frac = sum / (real)var.size();
 		constraint = vol_frac - target_frac;
 	}

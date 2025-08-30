@@ -18,7 +18,7 @@ namespace Meso{
 		Typedef_VectorD(d); Typedef_MatrixD(d);
 	public:
 		Grid<d> grid;
-		VoronoiParticles<d> particles;			////main particles
+		VoronoiParticles<d, NeighborKDTree<d>> particles;			////main particles
 
 		////field attributes
 		Field<real, d> rho;						////Voronoi density field
@@ -46,11 +46,11 @@ namespace Meso{
 		////Field update functions
 		virtual void Output(DriverMetaData& metadata) {
 			std::string vts_name = fmt::format("vts{:04d}.vts", metadata.current_frame);
-			bf::path vtk_path = metadata.base_path / bf::path(vts_name);
+			fs::path vtk_path = metadata.base_path / fs::path(vts_name);
 			VTKFunc::Write_VTS(rho, vtk_path.string());
 
 			std::string vtu_name = fmt::format("points{:04d}.vtu", metadata.current_frame);
-			bf::path vtu_path = metadata.base_path / bf::path(vtu_name);
+			fs::path vtu_path = metadata.base_path / fs::path(vtu_name);
 			VTKFunc::Write_Points<d>(particles.xRef(), vtu_path.string());
 		}
 

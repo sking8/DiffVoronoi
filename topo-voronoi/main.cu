@@ -14,7 +14,7 @@ void Run_Topology_Optimization(json& j) {
 	TopologyOptimization<d> optimizer;
 	TopoOptInitializer<d> scene;
 	Meso::OptimizerDriver driver;
-	driver.Run(j, scene, optimizer);
+	driver.Initialize_And_Run(j, scene, optimizer);
 }
 
 template<int d>
@@ -22,7 +22,7 @@ void Run_Voronoi_Field(json& j) {
 	Meso::VoronoiField<d> voronoi_field;
 	Meso::VoronoiFieldInitializer<d> scene;
 	Meso::Driver driver;
-	driver.Run(j, scene, voronoi_field);
+	driver.Initialize_And_Run(j, scene, voronoi_field);
 }
 
 template<int d>
@@ -30,7 +30,7 @@ void Run_Topo_Opt_Voronoi(json& j) {
 	TopoOptVoronoi<d> optimizer;
 	TopoOptVoronoiInitializer<d> scene;
 	Meso::OptimizerDriver driver;
-	driver.Run(j, scene, optimizer);
+	driver.Initialize_And_Run(j, scene, optimizer);
 }
 
 int main(int argc, char** argv) {

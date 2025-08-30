@@ -153,7 +153,7 @@ namespace Meso {
 		}
 
 		template<int d>
-		void Write_Boundary_Condition(const BoundaryConditionGrid<d>& bc, const Grid<d>& grid, bf::path base_path) {
+		void Write_Boundary_Condition(const BoundaryConditionGrid<d>& bc, const Grid<d>& grid, fs::path base_path) {
 			Typedef_VectorD(d);
 
 			// write psi_d
@@ -177,7 +177,7 @@ namespace Meso {
 			unstructured_grid->GetPointData()->AddArray(psi_d_array);
 			unstructured_grid->GetPointData()->SetActiveVectors("psi_d");
 
-			bf::path psi_d_path = base_path / bf::path("psi_d.vtu");
+			fs::path psi_d_path = base_path / fs::path("psi_d.vtu");
 			writer->SetFileName(psi_d_path.string().c_str());
 			writer->SetInputData(unstructured_grid);
 			writer->SetDataModeToBinary();
@@ -201,7 +201,7 @@ namespace Meso {
 			unstructured_grid->GetPointData()->AddArray(psi_n_array);
 			unstructured_grid->GetPointData()->SetActiveVectors("psi_n");
 
-			bf::path psi_n_path = base_path / bf::path("psi_n.vtu");
+			fs::path psi_n_path = base_path / fs::path("psi_n.vtu");
 			writer->SetFileName(psi_n_path.string().c_str());
 			writer->SetInputData(unstructured_grid);
 			writer->SetDataModeToBinary();

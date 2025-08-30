@@ -32,7 +32,7 @@ public:
 	real					obj;							//current objective
 	Meso::Grid<d>			grid;							//center grid
 	Meso::Field<real, d>	hat_rho;						//density field
-	Meso::Field<real, d>	dobj_dhat_rho;						//intermediate field dobj/dhat_rho
+	Meso::Field<real, d>	dobj_dhat_rho;					//intermediate field dobj/dhat_rho
 
 	////SIMP parameters
 	Meso::Field<real, d>	fem_variable_coef;				//hat_rho^p, the multiplier in front of Young's modulus
@@ -72,7 +72,7 @@ public:
 		}
 
 		std::string vts_name = fmt::format("vts{:04d}.vts", meta_data.iter_count);
-		Meso::bf::path vtk_path = meta_data.base_path / Meso::bf::path(vts_name);
+		Meso::fs::path vtk_path = meta_data.base_path / Meso::fs::path(vts_name);
 		Meso::VTKFunc::Write_VTS(hat_rho, vtk_path.string());
 
 		Grid<d> spx_grid(grid.Counts(), grid.dx, grid.Domain_Min(Meso::CENTER));
@@ -85,18 +85,18 @@ public:
 			}
 		);
 		vts_name = fmt::format("u_vts{:04d}.vts", meta_data.iter_count);
-		vtk_path = meta_data.base_path / Meso::bf::path(vts_name);
+		vtk_path = meta_data.base_path / Meso::fs::path(vts_name);
 		Meso::VTKFunc::Write_Vector_Field(meso_u, vtk_path.string());
 
 		std::string vtu_name = fmt::format("points{:04d}.vtu", meta_data.iter_count);
-		Meso::bf::path vtu_path = meta_data.base_path / Meso::bf::path(vtu_name);
+		Meso::fs::path vtu_path = meta_data.base_path / Meso::fs::path(vtu_name);
 		Meso::VTKFunc::Write_Points<d>(voronoi_field.particles.xRef(), vtu_path.string());
 	}
 
 	virtual bool Is_Converged(Meso::OptimizerDriverMetaData& meta_data) {
-		Meso::Array<real> temp = var;
+		Meso::Array<real,Meso::HOST> temp = var;
 		Meso::ArrayFunc::Minus(temp, intmed_var);
-		real change = Meso::ArrayFunc::Max_Abs<real>(temp);
+		real change = Meso::ArrayFunc::Max_Abs<real,Meso::HOST>(temp);
 
 		if (change < meta_data.tol && meta_data.iter_count!=1) { Meso::Pass("Converged!"); return true; }
 		return false;
@@ -147,7 +147,7 @@ public:
 		linear_fem_grid.Solve();
 		linear_fem_grid.Compute_Elastic_Energy(energy_f);
 		Meso::ArrayFunc::Multiply(fem_variable_coef.Data(), energy_f.Data());
-		obj = Meso::ArrayFunc::Sum(fem_variable_coef.Data());
+		obj = Meso::ArrayFunc::Sum<real,Meso::HOST>(fem_variable_coef.Data());
 		Meso::Info("Current objective: {}", obj);
 	}
 
@@ -207,7 +207,7 @@ public:
 
 	//volume constraints
 	void Compute_Constraint() {
-		real sum = Meso::ArrayFunc::Sum(hat_rho.Data());
+		real sum = Meso::ArrayFunc::Sum<real,Meso::HOST>(hat_rho.Data());
 		vol_frac = sum / (real)grid.Counts().prod();
 		Meso::Info("Current fraction: {}", vol_frac);
 		constraint = vol_frac - target_frac;
