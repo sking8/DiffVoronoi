@@ -1,6 +1,7 @@
 # Cellular Topology Optimization on Differentiable Voronoi Diagrams
 
 Fan Feng, Shiying Xiong, Ziyue Liu, Zangyueyang Xian, Yuqing Zhou, Hiroki Kobayashi, Atsushi Kawamoto, Tsuyoshi Nomura, Bo Zhu
+
 [![webpage](https://img.shields.io/badge/Project-Homepage-green)](https://sking8.github.io/TopoVoronoi/)
 [![paper](https://img.shields.io/badge/Paper-Preprint-red)](https://arxiv.org/pdf/2204.10313.pdf)
 [![code](https://img.shields.io/badge/Source_Code-Github-blue)](https://github.com/sking8/DiffVoronoi)
